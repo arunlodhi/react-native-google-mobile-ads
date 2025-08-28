@@ -142,11 +142,10 @@ public class ReactNativeGoogleMobileAdsRequestIdBannerAdViewManager
         reactContext.getNativeModule(ReactNativeGoogleMobileAdsRequestModule.class);
     
     if (requestModule == null) {
-      sendEvent(reactViewGroup, EVENT_AD_FAILED_TO_LOAD, 
-          Arguments.createMap() {{
-            putString("code", "request_module_not_found");
-            putString("message", "Request module not found");
-          }});
+      WritableMap errorPayload = Arguments.createMap();
+      errorPayload.putString("code", "request_module_not_found");
+      errorPayload.putString("message", "Request module not found");
+      sendEvent(reactViewGroup, EVENT_AD_FAILED_TO_LOAD, errorPayload);
       return;
     }
 
@@ -165,11 +164,10 @@ public class ReactNativeGoogleMobileAdsRequestIdBannerAdViewManager
     }
 
     // No ad found for this request ID
-    sendEvent(reactViewGroup, EVENT_AD_FAILED_TO_LOAD, 
-        Arguments.createMap() {{
-          putString("code", "ad_not_found");
-          putString("message", "Ad not found for request ID");
-        }});
+    WritableMap notFoundPayload = Arguments.createMap();
+    notFoundPayload.putString("code", "ad_not_found");
+    notFoundPayload.putString("message", "Ad not found for request ID");
+    sendEvent(reactViewGroup, EVENT_AD_FAILED_TO_LOAD, notFoundPayload);
   }
 
   private void setupBannerView(ReactNativeRequestIdAdView reactViewGroup, AdView bannerView) {
