@@ -74,7 +74,7 @@ class ReactNativeGoogleMobileAdsCachedBannerModule(reactContext: ReactApplicatio
                     for (i in 0 until sizes.size()) {
                         val sizeString = sizes.getString(i)
                         if (sizeString != null) {
-                            val adSize = ReactNativeGoogleMobileAdsCommon.getAdSize(sizeString, currentActivity)
+                            val adSize = ReactNativeGoogleMobileAdsCommon.getAdSize(sizeString, adView)
                             adSizes.add(adSize)
                         }
                     }
@@ -83,7 +83,7 @@ class ReactNativeGoogleMobileAdsCachedBannerModule(reactContext: ReactApplicatio
             } else if (config.hasKey("size")) {
                 val sizeString = config.getString("size")
                 if (sizeString != null) {
-                    val adSize = ReactNativeGoogleMobileAdsCommon.getAdSize(sizeString, currentActivity)
+                    val adSize = ReactNativeGoogleMobileAdsCommon.getAdSize(sizeString, adView)
                     adView.adSize = adSize
                 }
             }
@@ -161,11 +161,15 @@ class ReactNativeGoogleMobileAdsCachedBannerModule(reactContext: ReactApplicatio
     fun removeCachedAd(requestId: String, promise: Promise) {
         val adView = cachedBannerAds[requestId]
         adView?.let {
-            it.adListener = null
-            if (it is AdManagerAdView) {
-                it.appEventListener = null
+            try {
+                it.adListener = object : AdListener() {}
+                if (it is AdManagerAdView) {
+                    it.appEventListener = AppEventListener { _, _ -> }
+                }
+                it.destroy()
+            } catch (e: Exception) {
+                // Ignore cleanup errors
             }
-            it.destroy()
         }
         cachedBannerAds.remove(requestId)
         cachedAdInfo.remove(requestId)
@@ -184,11 +188,15 @@ class ReactNativeGoogleMobileAdsCachedBannerModule(reactContext: ReactApplicatio
     @ReactMethod
     fun clearAllCachedAds(promise: Promise) {
         for (adView in cachedBannerAds.values) {
-            adView.adListener = null
-            if (adView is AdManagerAdView) {
-                adView.appEventListener = null
+            try {
+                adView.adListener = object : AdListener() {}
+                if (adView is AdManagerAdView) {
+                    adView.appEventListener = AppEventListener { _, _ -> }
+                }
+                adView.destroy()
+            } catch (e: Exception) {
+                // Ignore cleanup errors
             }
-            adView.destroy()
         }
         cachedBannerAds.clear()
         cachedAdInfo.clear()
