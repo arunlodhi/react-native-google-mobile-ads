@@ -4,6 +4,7 @@ import com.facebook.react.bridge.Promise
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReactContextBaseJavaModule
 import com.facebook.react.bridge.ReadableArray
+import com.facebook.react.bridge.ReadableMap
 
 abstract class NativeGoogleMobileAdsRequestModuleSpec(reactContext: ReactApplicationContext) : ReactContextBaseJavaModule(reactContext) {
   abstract fun requestBannerAd(
@@ -11,7 +12,7 @@ abstract class NativeGoogleMobileAdsRequestModuleSpec(reactContext: ReactApplica
     size: String,
     maxHeight: Double?,
     width: Double?,
-    requestOptions: String?,
+    requestOptions: ReadableMap?,
     promise: Promise
   )
   
@@ -20,7 +21,7 @@ abstract class NativeGoogleMobileAdsRequestModuleSpec(reactContext: ReactApplica
     sizes: ReadableArray,
     maxHeight: Double?,
     width: Double?,
-    requestOptions: String?,
+    requestOptions: ReadableMap?,
     manualImpressionsEnabled: Boolean?,
     promise: Promise
   )

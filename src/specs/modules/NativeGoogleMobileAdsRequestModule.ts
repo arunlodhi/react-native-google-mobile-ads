@@ -17,6 +17,7 @@
 
 import type { TurboModule } from 'react-native';
 import { TurboModuleRegistry } from 'react-native';
+import { UnsafeObject } from 'react-native/Libraries/Types/CodegenTypes';
 
 export interface Spec extends TurboModule {
   /**
@@ -27,7 +28,7 @@ export interface Spec extends TurboModule {
     size: string,
     maxHeight?: number,
     width?: number,
-    requestOptions?: string,
+    requestOptions?: UnsafeObject,
   ): Promise<{ requestId: string; width: number; height: number }>;
 
   /**
@@ -38,7 +39,7 @@ export interface Spec extends TurboModule {
     sizes: string[],
     maxHeight?: number,
     width?: number,
-    requestOptions?: string,
+    requestOptions?: UnsafeObject,
     manualImpressionsEnabled?: boolean,
   ): Promise<{ requestId: string; width: number; height: number }>;
 

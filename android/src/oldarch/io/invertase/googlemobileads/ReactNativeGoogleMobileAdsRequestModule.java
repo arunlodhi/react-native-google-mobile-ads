@@ -23,7 +23,6 @@ import androidx.annotation.Nullable;
 import com.facebook.react.bridge.Arguments;
 import com.facebook.react.bridge.Promise;
 import com.facebook.react.bridge.ReactApplicationContext;
-import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
 import com.facebook.react.bridge.ReadableArray;
 import com.facebook.react.bridge.ReadableMap;
@@ -44,17 +43,16 @@ import java.util.UUID;
 import javax.annotation.Nonnull;
 import org.json.JSONException;
 import org.json.JSONObject;
-import io.invertase.googlemobileads.common.ReactNativeModule;
 
 @ReactModule(name = ReactNativeGoogleMobileAdsRequestModule.NAME)
-public class ReactNativeGoogleMobileAdsRequestModule extends ReactNativeModule {
+public class ReactNativeGoogleMobileAdsRequestModule extends NativeGoogleMobileAdsRequestModuleSpec {
   public static final String NAME = "RNGoogleMobileAdsRequestModule";
   
   private final Map<String, AdView> bannerAds = new HashMap<>();
   private final Map<String, AdManagerAdView> gamBannerAds = new HashMap<>();
 
   public ReactNativeGoogleMobileAdsRequestModule(ReactApplicationContext reactContext) {
-    super(reactContext, NAME);
+    super(reactContext);
   }
 
   @Nonnull
@@ -64,6 +62,7 @@ public class ReactNativeGoogleMobileAdsRequestModule extends ReactNativeModule {
   }
 
   @ReactMethod
+  @Override
   public void requestBannerAd(
       String unitId,
       String size,
@@ -91,7 +90,6 @@ public class ReactNativeGoogleMobileAdsRequestModule extends ReactNativeModule {
       bannerView.setAdSize(adSize);
 
       // Create ad request
-      AdRequest.Builder requestBuilder = new AdRequest.Builder();
       if (requestOptions != null) {
         try {
           AdRequest request = ReactNativeGoogleMobileAdsCommon.buildAdRequest(requestOptions);
@@ -112,8 +110,8 @@ public class ReactNativeGoogleMobileAdsRequestModule extends ReactNativeModule {
             }
           });
           bannerView.loadAd(request);
-        } catch (JSONException e) {
-          promise.reject("invalid_request_options", "Invalid request options JSON");
+        } catch (Exception e) {
+          promise.reject("invalid_request_options", "Invalid request options");
           return;
         }
       } else {
@@ -145,6 +143,7 @@ public class ReactNativeGoogleMobileAdsRequestModule extends ReactNativeModule {
   }
 
   @ReactMethod
+  @Override
   public void requestGAMBannerAd(
       String unitId,
       ReadableArray sizes,
@@ -204,8 +203,8 @@ public class ReactNativeGoogleMobileAdsRequestModule extends ReactNativeModule {
             }
           });
           gamBannerView.loadAd(request);
-        } catch (JSONException e) {
-          promise.reject("invalid_request_options", "Invalid request options JSON");
+        } catch (Exception e) {
+          promise.reject("invalid_request_options", "Invalid request options");
           return;
         }
       } else {
@@ -238,6 +237,7 @@ public class ReactNativeGoogleMobileAdsRequestModule extends ReactNativeModule {
   }
 
   @ReactMethod
+  @Override
   public void releaseAd(String requestId) {
     // Remove from banner ads
     AdView bannerView = bannerAds.get(requestId);
@@ -256,6 +256,7 @@ public class ReactNativeGoogleMobileAdsRequestModule extends ReactNativeModule {
   }
 
   @ReactMethod(isBlockingSynchronousMethod = true)
+  @Override
   public boolean hasAd(String requestId) {
     return bannerAds.containsKey(requestId) || gamBannerAds.containsKey(requestId);
   }
