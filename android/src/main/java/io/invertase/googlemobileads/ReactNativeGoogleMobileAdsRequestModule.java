@@ -53,7 +53,7 @@ public class ReactNativeGoogleMobileAdsRequestModule extends ReactNativeModule {
   private final Map<String, AdManagerAdView> gamBannerAds = new HashMap<>();
 
   public ReactNativeGoogleMobileAdsRequestModule(ReactApplicationContext reactContext) {
-    super(reactContext);
+    super(reactContext, NAME);
   }
 
   @Nonnull
