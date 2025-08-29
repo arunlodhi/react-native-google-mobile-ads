@@ -20,14 +20,14 @@
 #import <React/RCTUIManager.h>
 #import <React/RCTViewManager.h>
 
-#import "RNGoogleMobileAdsRequestIdBannerComponent.h"
+#import "RNGoogleMobileAdsCachedBannerComponent.h"
 
-@interface RNGoogleMobileAdsRequestIdBannerViewManager : RCTViewManager
+@interface RNGoogleMobileAdsCachedBannerViewManager : RCTViewManager
 @end
 
-@implementation RNGoogleMobileAdsRequestIdBannerViewManager
+@implementation RNGoogleMobileAdsCachedBannerViewManager
 
-RCT_EXPORT_MODULE(RNGoogleMobileAdsRequestIdBannerView);
+RCT_EXPORT_MODULE(RNGoogleMobileAdsCachedBannerView);
 
 RCT_EXPORT_VIEW_PROPERTY(requestId, NSString);
 
@@ -37,8 +37,8 @@ RCT_EXPORT_METHOD(recordManualImpression : (nonnull NSNumber *)reactTag) {
 #if !TARGET_OS_MACCATALYST
   [self.bridge.uiManager
       addUIBlock:^(RCTUIManager *uiManager, NSDictionary<NSNumber *, UIView *> *viewRegistry) {
-        RNGoogleMobileAdsRequestIdBannerComponent *banner = viewRegistry[reactTag];
-        if (!banner || ![banner isKindOfClass:[RNGoogleMobileAdsRequestIdBannerComponent class]]) {
+        RNGoogleMobileAdsCachedBannerComponent *banner = viewRegistry[reactTag];
+        if (!banner || ![banner isKindOfClass:[RNGoogleMobileAdsCachedBannerComponent class]]) {
           RCTLogError(@"Cannot find NativeView with tag #%@", reactTag);
           return;
         }
@@ -53,7 +53,7 @@ RCT_EXPORT_METHOD(recordManualImpression : (nonnull NSNumber *)reactTag) {
 #if TARGET_OS_MACCATALYST
   return nil;
 #else
-  RNGoogleMobileAdsRequestIdBannerComponent *banner = [RNGoogleMobileAdsRequestIdBannerComponent new];
+  RNGoogleMobileAdsCachedBannerComponent *banner = [RNGoogleMobileAdsCachedBannerComponent new];
   return banner;
 #endif
 }

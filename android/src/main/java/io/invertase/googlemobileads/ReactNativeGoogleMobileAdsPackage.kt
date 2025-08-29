@@ -33,7 +33,7 @@ class ReactNativeGoogleMobileAdsPackage : TurboReactPackage() {
       ReactNativeGoogleMobileAdsBannerAdViewManager(),
       ReactNativeGoogleMobileAdsNativeAdViewManager(reactContext),
       ReactNativeGoogleMobileAdsMediaViewManager(reactContext),
-      ReactNativeGoogleMobileAdsRequestIdBannerAdViewManager()
+      ReactNativeGoogleMobileAdsCachedBannerAdViewManager()
     )
   }
 

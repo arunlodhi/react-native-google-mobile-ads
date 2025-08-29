@@ -43,10 +43,10 @@ import java.util.UUID;
 import javax.annotation.Nonnull;
 import org.json.JSONException;
 import org.json.JSONObject;
+import io.invertase.googlemobileads.common.ReactNativeModule;
 
 @ReactModule(name = ReactNativeGoogleMobileAdsRequestModule.NAME)
-public class ReactNativeGoogleMobileAdsRequestModule extends ReactContextBaseJavaModule {
-  private static final String REACT_CLASS = "RNGoogleMobileAdsRequestModule";
+public class ReactNativeGoogleMobileAdsRequestModule extends ReactNativeModule {
   public static final String NAME = "RNGoogleMobileAdsRequestModule";
   
   private final Map<String, AdView> bannerAds = new HashMap<>();

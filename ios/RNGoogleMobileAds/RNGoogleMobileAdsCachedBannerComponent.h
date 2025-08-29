@@ -18,7 +18,7 @@
 #import <React/RCTView.h>
 #import <React/RCTBridge.h>
 
-@interface RNGoogleMobileAdsRequestIdBannerComponent : RCTView
+@interface RNGoogleMobileAdsCachedBannerComponent : RCTView
 
 @property(nonatomic, copy) NSString *requestId;
 @property(nonatomic, copy) RCTBubblingEventBlock onNativeEvent;

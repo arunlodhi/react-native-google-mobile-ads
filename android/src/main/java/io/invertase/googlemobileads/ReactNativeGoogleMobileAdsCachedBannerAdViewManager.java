@@ -40,13 +40,13 @@ import com.google.android.gms.ads.LoadAdError;
 import com.google.android.gms.ads.OnPaidEventListener;
 import com.google.android.gms.ads.admanager.AdManagerAdView;
 import com.google.android.gms.ads.admanager.AppEventListener;
-import io.invertase.googlemobileads.common.ReactNativeRequestIdAdView;
+import io.invertase.googlemobileads.common.ReactNativeCachedAdView;
 import java.util.Map;
 import javax.annotation.Nonnull;
 
-public class ReactNativeGoogleMobileAdsRequestIdBannerAdViewManager
-    extends SimpleViewManager<ReactNativeRequestIdAdView> {
-  private static final String REACT_CLASS = "RNGoogleMobileAdsRequestIdBannerView";
+public class ReactNativeGoogleMobileAdsCachedBannerAdViewManager
+    extends SimpleViewManager<ReactNativeCachedAdView> {
+  private static final String REACT_CLASS = "RNGoogleMobileAdsCachedBannerView";
   private final String EVENT_AD_LOADED = "onAdLoaded";
   private final String EVENT_AD_IMPRESSION = "onAdImpression";
   private final String EVENT_AD_CLICKED = "onAdClicked";
@@ -66,8 +66,8 @@ public class ReactNativeGoogleMobileAdsRequestIdBannerAdViewManager
 
   @Nonnull
   @Override
-  public ReactNativeRequestIdAdView createViewInstance(@Nonnull ThemedReactContext themedReactContext) {
-    return new ReactNativeRequestIdAdView(themedReactContext);
+  public ReactNativeCachedAdView createViewInstance(@Nonnull ThemedReactContext themedReactContext) {
+    return new ReactNativeCachedAdView(themedReactContext);
   }
 
   @Override
@@ -79,7 +79,7 @@ public class ReactNativeGoogleMobileAdsRequestIdBannerAdViewManager
 
   @Override
   public void receiveCommand(
-      @NonNull ReactNativeRequestIdAdView reactViewGroup, String commandId, @Nullable ReadableArray args) {
+      @NonNull ReactNativeCachedAdView reactViewGroup, String commandId, @Nullable ReadableArray args) {
     super.receiveCommand(reactViewGroup, commandId, args);
 
     if (commandId.equals(COMMAND_ID_RECORD_MANUAL_IMPRESSION)) {
@@ -91,13 +91,13 @@ public class ReactNativeGoogleMobileAdsRequestIdBannerAdViewManager
   }
 
   @ReactProp(name = "requestId")
-  public void setRequestId(ReactNativeRequestIdAdView reactViewGroup, String value) {
+  public void setRequestId(ReactNativeCachedAdView reactViewGroup, String value) {
     reactViewGroup.setRequestId(value);
     requestAd(reactViewGroup);
   }
 
   @Override
-  public void onDropViewInstance(@NonNull ReactNativeRequestIdAdView reactViewGroup) {
+  public void onDropViewInstance(@NonNull ReactNativeCachedAdView reactViewGroup) {
     BaseAdView adView = getAdView(reactViewGroup);
     if (adView != null) {
       adView.setAdListener(null);
@@ -118,9 +118,9 @@ public class ReactNativeGoogleMobileAdsRequestIdBannerAdViewManager
     return null;
   }
 
-  private void requestAd(ReactNativeRequestIdAdView reactViewGroup) {
+  private void requestAd(ReactNativeCachedAdView reactViewGroup) {
     String requestId = reactViewGroup.getRequestId();
-    
+
     if (requestId == null) {
       return;
     }
@@ -138,9 +138,9 @@ public class ReactNativeGoogleMobileAdsRequestIdBannerAdViewManager
 
     // Get the request module
     ReactContext reactContext = (ReactContext) reactViewGroup.getContext();
-    ReactNativeGoogleMobileAdsRequestModule requestModule = 
+    ReactNativeGoogleMobileAdsRequestModule requestModule =
         reactContext.getNativeModule(ReactNativeGoogleMobileAdsRequestModule.class);
-    
+
     if (requestModule == null) {
       WritableMap errorPayload = Arguments.createMap();
       errorPayload.putString("code", "request_module_not_found");
@@ -170,7 +170,7 @@ public class ReactNativeGoogleMobileAdsRequestIdBannerAdViewManager
     sendEvent(reactViewGroup, EVENT_AD_FAILED_TO_LOAD, notFoundPayload);
   }
 
-  private void setupBannerView(ReactNativeRequestIdAdView reactViewGroup, AdView bannerView) {
+  private void setupBannerView(ReactNativeCachedAdView reactViewGroup, AdView bannerView) {
     bannerView.setOnPaidEventListener(new OnPaidEventListener() {
       @Override
       public void onPaidEvent(AdValue adValue) {
@@ -226,7 +226,7 @@ public class ReactNativeGoogleMobileAdsRequestIdBannerAdViewManager
     reactViewGroup.addView(bannerView);
   }
 
-  private void setupGAMBannerView(ReactNativeRequestIdAdView reactViewGroup, AdManagerAdView gamBannerView) {
+  private void setupGAMBannerView(ReactNativeCachedAdView reactViewGroup, AdManagerAdView gamBannerView) {
     gamBannerView.setOnPaidEventListener(new OnPaidEventListener() {
       @Override
       public void onPaidEvent(AdValue adValue) {
@@ -292,7 +292,7 @@ public class ReactNativeGoogleMobileAdsRequestIdBannerAdViewManager
     reactViewGroup.addView(gamBannerView);
   }
 
-  private void sendEvent(ReactNativeRequestIdAdView reactViewGroup, String type, WritableMap payload) {
+  private void sendEvent(ReactNativeCachedAdView reactViewGroup, String type, WritableMap payload) {
     WritableMap event = Arguments.createMap();
     event.putString("type", type);
 

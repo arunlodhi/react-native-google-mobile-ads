@@ -20,10 +20,10 @@ package io.invertase.googlemobileads.common;
 import android.content.Context;
 import android.widget.FrameLayout;
 
-public class ReactNativeRequestIdAdView extends FrameLayout {
+public class ReactNativeCachedAdView extends FrameLayout {
   private String requestId;
 
-  public ReactNativeRequestIdAdView(Context context) {
+  public ReactNativeCachedAdView(Context context) {
     super(context);
   }
 

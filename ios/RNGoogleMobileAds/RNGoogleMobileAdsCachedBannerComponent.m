@@ -15,7 +15,7 @@
  *
  */
 
-#import "RNGoogleMobileAdsRequestIdBannerComponent.h"
+#import "RNGoogleMobileAdsCachedBannerComponent.h"
 #import "RNGoogleMobileAdsRequestModule.h"
 #import "RNGoogleMobileAdsCommon.h"
 
@@ -23,7 +23,7 @@
 #import <GoogleMobileAds/GoogleMobileAds.h>
 #endif
 
-@implementation RNGoogleMobileAdsRequestIdBannerComponent {
+@implementation RNGoogleMobileAdsCachedBannerComponent {
   GADBannerView *_bannerView;
   GAMBannerView *_gamBannerView;
   BOOL _requestIdChanged;
