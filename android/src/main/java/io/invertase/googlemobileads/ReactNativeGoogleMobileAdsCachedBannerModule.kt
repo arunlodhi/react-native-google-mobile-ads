@@ -31,7 +31,7 @@ class ReactNativeGoogleMobileAdsCachedBannerModule(reactContext: ReactApplicatio
     private val cachedAdInfo = ConcurrentHashMap<String, WritableMap>()
 
     override fun getName(): String {
-        return "RNGoogleMobileAdsCachedBannerModule"
+        return NAME
     }
 
     @ReactMethod
@@ -205,5 +205,9 @@ class ReactNativeGoogleMobileAdsCachedBannerModule(reactContext: ReactApplicatio
 
     fun getCachedBannerView(requestId: String): BaseAdView? {
         return cachedBannerAds[requestId]
+    }
+
+    companion object {
+        const val NAME = "RNGoogleMobileAdsCachedBannerModule"
     }
 }

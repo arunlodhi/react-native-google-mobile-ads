@@ -47,7 +47,7 @@ class ReactNativeGoogleMobileAdsPackage : TurboReactPackage() {
       ReactNativeGoogleMobileAdsRewardedModule.NAME -> return ReactNativeGoogleMobileAdsRewardedModule(reactContext)
       ReactNativeGoogleMobileAdsRewardedInterstitialModule.NAME -> return ReactNativeGoogleMobileAdsRewardedInterstitialModule(reactContext)
       ReactNativeGoogleMobileAdsNativeModule.NAME -> return ReactNativeGoogleMobileAdsNativeModule(reactContext)
-      "RNGoogleMobileAdsCachedBannerModule" -> return ReactNativeGoogleMobileAdsCachedBannerModule(reactContext)
+      ReactNativeGoogleMobileAdsCachedBannerModule.NAME -> return ReactNativeGoogleMobileAdsCachedBannerModule(reactContext)
     }
     return null
   }
@@ -128,10 +128,10 @@ class ReactNativeGoogleMobileAdsPackage : TurboReactPackage() {
           false,
           isTurboModule,
         )
-      moduleInfos["RNGoogleMobileAdsCachedBannerModule"] =
+      moduleInfos[ReactNativeGoogleMobileAdsCachedBannerModule.NAME] =
         ReactModuleInfo(
-          "RNGoogleMobileAdsCachedBannerModule",
-          "RNGoogleMobileAdsCachedBannerModule",
+          ReactNativeGoogleMobileAdsCachedBannerModule.NAME,
+          ReactNativeGoogleMobileAdsCachedBannerModule.NAME,
           false,
           false,
           false,
