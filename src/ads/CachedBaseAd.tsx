@@ -34,7 +34,6 @@ export const CachedBaseAd = React.forwardRef<
   CachedBaseAdProps
 >(({ requestId, ...props }, ref) => {
   const [dimensions, setDimensions] = useState<(number | DimensionValue)[]>([0, 0]);
-  const [isFluid, setIsFluid] = useState(false);
 
   useEffect(() => {
     if (!requestId) {
@@ -140,15 +139,10 @@ export const CachedBaseAd = React.forwardRef<
     }
   }
 
-  const style = isFluid
-    ? {
-        width: '100%' as DimensionValue,
-        height: dimensions[1],
-      }
-    : {
-        width: dimensions[0],
-        height: dimensions[1],
-      };
+  const style = {
+    width: dimensions[0],
+    height: dimensions[1],
+  };
 
   return (
     <GoogleMobileAdsCachedBannerView
