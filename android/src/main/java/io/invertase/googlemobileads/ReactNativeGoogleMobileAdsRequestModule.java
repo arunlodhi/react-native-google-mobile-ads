@@ -45,6 +45,7 @@ import org.json.JSONObject;
 
 public class ReactNativeGoogleMobileAdsRequestModule extends ReactContextBaseJavaModule {
   private static final String REACT_CLASS = "RNGoogleMobileAdsRequestModule";
+  public static final String NAME = "RNGoogleMobileAdsRequestModule";
   
   private final Map<String, AdView> bannerAds = new HashMap<>();
   private final Map<String, AdManagerAdView> gamBannerAds = new HashMap<>();
@@ -56,7 +57,7 @@ public class ReactNativeGoogleMobileAdsRequestModule extends ReactContextBaseJav
   @Nonnull
   @Override
   public String getName() {
-    return REACT_CLASS;
+    return NAME;
   }
 
   @ReactMethod
