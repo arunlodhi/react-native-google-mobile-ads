@@ -567,6 +567,6 @@ website/.cache
 website/public
 
 # generated files by bob
-lib/
+# lib/
 
 .yarn
