@@ -84,7 +84,7 @@ class ReactNativeGoogleMobileAdsCachedBannerModule(reactContext: ReactApplicatio
                 val sizeString = config.getString("size")
                 if (sizeString != null) {
                     val adSize = ReactNativeGoogleMobileAdsCommon.getAdSize(sizeString, adView)
-                    adView.adSize = adSize
+                    (adView as AdView).setAdSize(adSize)
                 }
             }
 
