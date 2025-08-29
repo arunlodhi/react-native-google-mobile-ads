@@ -51,6 +51,16 @@ export { NativeMediaView } from './ads/native-ad/NativeMediaView';
 export { NativeAsset, NativeAssetType } from './ads/native-ad/NativeAsset';
 export { GAMBannerAd } from './ads/GAMBannerAd';
 export { GAMInterstitialAd } from './ads/GAMInterstitialAd';
+export { CachedBannerAd } from './ads/CachedBannerAd';
+export { CachedGAMBannerAd } from './ads/CachedGAMBannerAd';
+export {
+  requestBannerAd,
+  requestGAMBannerAd,
+  getCachedAdInfo,
+  removeCachedAd,
+  getAllCachedAdIds,
+  clearAllCachedAds,
+} from './ads/CachedBannerAds';
 export { useAppOpenAd } from './hooks/useAppOpenAd';
 export { useInterstitialAd } from './hooks/useInterstitialAd';
 export { useRewardedAd } from './hooks/useRewardedAd';
