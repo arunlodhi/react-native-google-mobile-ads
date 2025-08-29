@@ -1,9 +1,10 @@
 import type { TurboModule } from 'react-native';
+import { UnsafeObject } from 'react-native/Libraries/Types/CodegenTypes';
 export interface Spec extends TurboModule {
     /**
      * Request a banner ad and return a promise with the requestId
      */
-    requestBannerAd(unitId: string, size: string, maxHeight?: number, width?: number, requestOptions?: string): Promise<{
+    requestBannerAd(unitId: string, size: string, maxHeight?: number, width?: number, requestOptions?: UnsafeObject): Promise<{
         requestId: string;
         width: number;
         height: number;
@@ -11,7 +12,7 @@ export interface Spec extends TurboModule {
     /**
      * Request a GAM banner ad and return a promise with the requestId
      */
-    requestGAMBannerAd(unitId: string, sizes: string[], maxHeight?: number, width?: number, requestOptions?: string, manualImpressionsEnabled?: boolean): Promise<{
+    requestGAMBannerAd(unitId: string, sizes: string[], maxHeight?: number, width?: number, requestOptions?: UnsafeObject, manualImpressionsEnabled?: boolean): Promise<{
         requestId: string;
         width: number;
         height: number;
