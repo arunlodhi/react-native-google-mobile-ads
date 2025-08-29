@@ -27,6 +27,7 @@ import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
 import com.facebook.react.bridge.ReadableArray;
 import com.facebook.react.bridge.WritableMap;
+import com.facebook.react.module.annotations.ReactModule;
 import com.google.android.gms.ads.AdListener;
 import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.AdSize;
@@ -43,6 +44,7 @@ import javax.annotation.Nonnull;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+@ReactModule(name = ReactNativeGoogleMobileAdsRequestModule.NAME)
 public class ReactNativeGoogleMobileAdsRequestModule extends ReactContextBaseJavaModule {
   private static final String REACT_CLASS = "RNGoogleMobileAdsRequestModule";
   public static final String NAME = "RNGoogleMobileAdsRequestModule";
