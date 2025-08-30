@@ -27,7 +27,7 @@ import java.util.concurrent.ConcurrentHashMap
 
 @ReactModule(name = ReactNativeGoogleMobileAdsCachedBannerModule.NAME)
 class ReactNativeGoogleMobileAdsCachedBannerModule(reactContext: ReactApplicationContext) :
-    ReactContextBaseJavaModule(reactContext) {
+    NativeCachedBannerModuleSpec(reactContext) {
 
     private val cachedBannerAds = ConcurrentHashMap<String, BaseAdView>()
     private val cachedAdInfo = ConcurrentHashMap<String, WritableMap>()
@@ -37,7 +37,7 @@ class ReactNativeGoogleMobileAdsCachedBannerModule(reactContext: ReactApplicatio
     }
 
     @ReactMethod
-    fun requestCachedBannerAd(config: ReadableMap, promise: Promise) {
+    override fun requestCachedBannerAd(config: ReadableMap, promise: Promise) {
         val requestId = config.getString("requestId")
         val unitId = config.getString("unitId")
         val isGAM = config.getBoolean("isGAM")
@@ -150,7 +150,7 @@ class ReactNativeGoogleMobileAdsCachedBannerModule(reactContext: ReactApplicatio
     }
 
     @ReactMethod
-    fun getCachedAdInfo(requestId: String, promise: Promise) {
+    override fun getCachedAdInfo(requestId: String, promise: Promise) {
         val adInfo = cachedAdInfo[requestId]
         if (adInfo != null) {
             promise.resolve(adInfo)
@@ -160,7 +160,7 @@ class ReactNativeGoogleMobileAdsCachedBannerModule(reactContext: ReactApplicatio
     }
 
     @ReactMethod
-    fun removeCachedAd(requestId: String, promise: Promise) {
+    override fun removeCachedAd(requestId: String, promise: Promise) {
         val adView = cachedBannerAds[requestId]
         adView?.let {
             try {
@@ -179,7 +179,7 @@ class ReactNativeGoogleMobileAdsCachedBannerModule(reactContext: ReactApplicatio
     }
 
     @ReactMethod
-    fun getAllCachedAdIds(promise: Promise) {
+    override fun getAllCachedAdIds(promise: Promise) {
         val requestIds = Arguments.createArray()
         for (requestId in cachedBannerAds.keys) {
             requestIds.pushString(requestId)
@@ -188,7 +188,7 @@ class ReactNativeGoogleMobileAdsCachedBannerModule(reactContext: ReactApplicatio
     }
 
     @ReactMethod
-    fun clearAllCachedAds(promise: Promise) {
+    override fun clearAllCachedAds(promise: Promise) {
         for (adView in cachedBannerAds.values) {
             try {
                 adView.adListener = object : AdListener() {}
