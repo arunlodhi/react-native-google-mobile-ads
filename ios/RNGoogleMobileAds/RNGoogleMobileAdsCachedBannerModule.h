@@ -16,8 +16,18 @@
  *
  */
 
-#import <React/RCTBridgeModule.h>
+#import <Foundation/Foundation.h>
 
+#ifdef RCT_NEW_ARCH_ENABLED
+
+#import <RNGoogleMobileAdsSpec/RNGoogleMobileAdsSpec.h>
+@interface RNGoogleMobileAdsCachedBannerModule : NSObject <NativeCachedBannerModuleSpec>
+
+#else
+
+#import <React/RCTBridgeModule.h>
 @interface RNGoogleMobileAdsCachedBannerModule : NSObject <RCTBridgeModule>
+
+#endif
 
 @end

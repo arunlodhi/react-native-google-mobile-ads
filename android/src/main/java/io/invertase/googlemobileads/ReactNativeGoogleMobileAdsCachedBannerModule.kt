@@ -19,11 +19,13 @@ package io.invertase.googlemobileads
 
 import android.app.Activity
 import com.facebook.react.bridge.*
+import com.facebook.react.module.annotations.ReactModule
 import com.google.android.gms.ads.*
 import com.google.android.gms.ads.admanager.AdManagerAdView
 import com.google.android.gms.ads.admanager.AppEventListener
 import java.util.concurrent.ConcurrentHashMap
 
+@ReactModule(name = ReactNativeGoogleMobileAdsCachedBannerModule.NAME)
 class ReactNativeGoogleMobileAdsCachedBannerModule(reactContext: ReactApplicationContext) :
     ReactContextBaseJavaModule(reactContext) {
 

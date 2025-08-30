@@ -23,6 +23,10 @@
 #import <GoogleMobileAds/GoogleMobileAds.h>
 #endif
 
+#ifdef RCT_NEW_ARCH_ENABLED
+#import <RNGoogleMobileAdsSpec/RNGoogleMobileAdsSpec.h>
+#endif
+
 @interface RNGoogleMobileAdsCachedBannerModule ()
 @property(nonatomic, strong) NSMutableDictionary<NSString *, GADBannerView *> *cachedBannerAds;
 @property(nonatomic, strong) NSMutableDictionary<NSString *, NSDictionary *> *cachedAdInfo;
@@ -31,6 +35,14 @@
 @implementation RNGoogleMobileAdsCachedBannerModule
 
 RCT_EXPORT_MODULE(RNGoogleMobileAdsCachedBannerModule);
+
+#ifdef RCT_NEW_ARCH_ENABLED
+- (std::shared_ptr<facebook::react::TurboModule>)getTurboModule:
+    (const facebook::react::ObjCTurboModule::InitParams &)params
+{
+    return std::make_shared<facebook::react::NativeCachedBannerModuleSpecJSI>(params);
+}
+#endif
 
 - (instancetype)init {
   self = [super init];
