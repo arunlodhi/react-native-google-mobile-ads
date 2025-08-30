@@ -31,6 +31,7 @@ import com.facebook.react.uimanager.PixelUtil;
 import com.facebook.react.uimanager.SimpleViewManager;
 import com.facebook.react.uimanager.ThemedReactContext;
 import com.facebook.react.uimanager.UIManagerHelper;
+import com.facebook.react.uimanager.UiThreadUtil;
 import com.facebook.react.uimanager.annotations.ReactProp;
 import com.facebook.react.uimanager.events.EventDispatcher;
 import com.google.android.gms.ads.AdListener;
@@ -100,7 +101,8 @@ public class ReactNativeGoogleMobileAdsBannerAdViewManager
     } else if (commandId.equals(COMMAND_ID_LOAD)) {
       BaseAdView adView = getAdView(reactViewGroup);
       AdRequest request = reactViewGroup.getRequest();
-      adView.loadAd(request);
+      // Ensure ad loading runs on the main UI thread
+      UiThreadUtil.runOnUiThread(() -> adView.loadAd(request));
     }
   }
 
@@ -345,7 +347,8 @@ public class ReactNativeGoogleMobileAdsBannerAdViewManager
         adView.setAdSize(sizes.get(0));
       }
 
-      adView.loadAd(request);
+      // Ensure ad loading runs on the main UI thread
+      UiThreadUtil.runOnUiThread(() -> adView.loadAd(request));
     }
   }
 
