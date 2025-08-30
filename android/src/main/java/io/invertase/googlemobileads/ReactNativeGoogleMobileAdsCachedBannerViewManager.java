@@ -115,80 +115,104 @@ public class ReactNativeGoogleMobileAdsCachedBannerViewManager
       BaseAdView cachedAdView = cachedBannerModule.getCachedBannerView(requestId);
       
       if (cachedAdView != null) {
-        // Remove from previous parent if any
-        ViewGroup parent = (ViewGroup) cachedAdView.getParent();
-        if (parent != null) {
-          parent.removeView(cachedAdView);
-        }
-
-        // Set up event listeners
-        cachedAdView.setOnPaidEventListener(
-            new OnPaidEventListener() {
-              @Override
-              public void onPaidEvent(AdValue adValue) {
-                WritableMap payload = Arguments.createMap();
-                payload.putDouble("value", 1e-6 * adValue.getValueMicros());
-                payload.putDouble("precision", adValue.getPrecisionType());
-                payload.putString("currency", adValue.getCurrencyCode());
-                sendEvent(reactViewGroup, EVENT_PAID, payload);
-              }
-            });
-
-        cachedAdView.setAdListener(
-            new AdListener() {
-              @Override
-              public void onAdLoaded() {
-                WritableMap payload = Arguments.createMap();
-                payload.putDouble("width", PixelUtil.toDIPFromPixel(cachedAdView.getWidth()));
-                payload.putDouble("height", PixelUtil.toDIPFromPixel(cachedAdView.getHeight()));
-                sendEvent(reactViewGroup, EVENT_AD_LOADED, payload);
-              }
-
-              @Override
-              public void onAdFailedToLoad(@NonNull LoadAdError loadAdError) {
-                int errorCode = loadAdError.getCode();
-                WritableMap payload = ReactNativeGoogleMobileAdsCommon.errorCodeToMap(errorCode);
-                sendEvent(reactViewGroup, EVENT_AD_FAILED_TO_LOAD, payload);
-              }
-
-              @Override
-              public void onAdOpened() {
-                sendEvent(reactViewGroup, EVENT_AD_OPENED, null);
-              }
-
-              @Override
-              public void onAdClosed() {
-                sendEvent(reactViewGroup, EVENT_AD_CLOSED, null);
-              }
-
-              @Override
-              public void onAdImpression() {
-                sendEvent(reactViewGroup, EVENT_AD_IMPRESSION, null);
-              }
-
-              @Override
-              public void onAdClicked() {
-                sendEvent(reactViewGroup, EVENT_AD_CLICKED, null);
-              }
-            });
-
-        if (cachedAdView instanceof AdManagerAdView) {
-          ((AdManagerAdView) cachedAdView)
-              .setAppEventListener(
-                  new AppEventListener() {
-                    @Override
-                    public void onAppEvent(@NonNull String name, @Nullable String data) {
-                      WritableMap payload = Arguments.createMap();
-                      payload.putString("name", name);
-                      payload.putString("data", data);
-                      sendEvent(reactViewGroup, EVENT_APP_EVENT, payload);
-                    }
-                  });
-        }
-
-        // Add to view hierarchy
-        reactViewGroup.addView(cachedAdView);
+        attachCachedAdView(reactViewGroup, cachedAdView);
+      } else {
+        // Ad not ready yet, send a failed to load event to indicate the ad is not available
+        WritableMap payload = Arguments.createMap();
+        payload.putString("code", "cached-ad-not-ready");
+        payload.putString("message", "Cached ad with requestId '" + requestId + "' is not ready yet. Make sure to call requestGAMBannerAd first and wait for it to load.");
+        sendEvent(reactViewGroup, EVENT_AD_FAILED_TO_LOAD, payload);
       }
+    } else {
+      // Module not available
+      WritableMap payload = Arguments.createMap();
+      payload.putString("code", "cached-banner-module-unavailable");
+      payload.putString("message", "Cached banner module is not available");
+      sendEvent(reactViewGroup, EVENT_AD_FAILED_TO_LOAD, payload);
+    }
+  }
+
+  private void attachCachedAdView(ReactNativeAdView reactViewGroup, BaseAdView cachedAdView) {
+    // Remove from previous parent if any
+    ViewGroup parent = (ViewGroup) cachedAdView.getParent();
+    if (parent != null) {
+      parent.removeView(cachedAdView);
+    }
+
+    // Set up event listeners
+    cachedAdView.setOnPaidEventListener(
+        new OnPaidEventListener() {
+          @Override
+          public void onPaidEvent(AdValue adValue) {
+            WritableMap payload = Arguments.createMap();
+            payload.putDouble("value", 1e-6 * adValue.getValueMicros());
+            payload.putDouble("precision", adValue.getPrecisionType());
+            payload.putString("currency", adValue.getCurrencyCode());
+            sendEvent(reactViewGroup, EVENT_PAID, payload);
+          }
+        });
+
+    cachedAdView.setAdListener(
+        new AdListener() {
+          @Override
+          public void onAdLoaded() {
+            WritableMap payload = Arguments.createMap();
+            payload.putDouble("width", PixelUtil.toDIPFromPixel(cachedAdView.getWidth()));
+            payload.putDouble("height", PixelUtil.toDIPFromPixel(cachedAdView.getHeight()));
+            sendEvent(reactViewGroup, EVENT_AD_LOADED, payload);
+          }
+
+          @Override
+          public void onAdFailedToLoad(@NonNull LoadAdError loadAdError) {
+            int errorCode = loadAdError.getCode();
+            WritableMap payload = ReactNativeGoogleMobileAdsCommon.errorCodeToMap(errorCode);
+            sendEvent(reactViewGroup, EVENT_AD_FAILED_TO_LOAD, payload);
+          }
+
+          @Override
+          public void onAdOpened() {
+            sendEvent(reactViewGroup, EVENT_AD_OPENED, null);
+          }
+
+          @Override
+          public void onAdClosed() {
+            sendEvent(reactViewGroup, EVENT_AD_CLOSED, null);
+          }
+
+          @Override
+          public void onAdImpression() {
+            sendEvent(reactViewGroup, EVENT_AD_IMPRESSION, null);
+          }
+
+          @Override
+          public void onAdClicked() {
+            sendEvent(reactViewGroup, EVENT_AD_CLICKED, null);
+          }
+        });
+
+    if (cachedAdView instanceof AdManagerAdView) {
+      ((AdManagerAdView) cachedAdView)
+          .setAppEventListener(
+              new AppEventListener() {
+                @Override
+                public void onAppEvent(@NonNull String name, @Nullable String data) {
+                  WritableMap payload = Arguments.createMap();
+                  payload.putString("name", name);
+                  payload.putString("data", data);
+                  sendEvent(reactViewGroup, EVENT_APP_EVENT, payload);
+                }
+              });
+    }
+
+    // Add to view hierarchy
+    reactViewGroup.addView(cachedAdView);
+    
+    // Trigger onAdLoaded event immediately if the ad is already loaded
+    if (cachedAdView.getWidth() > 0 && cachedAdView.getHeight() > 0) {
+      WritableMap payload = Arguments.createMap();
+      payload.putDouble("width", PixelUtil.toDIPFromPixel(cachedAdView.getWidth()));
+      payload.putDouble("height", PixelUtil.toDIPFromPixel(cachedAdView.getHeight()));
+      sendEvent(reactViewGroup, EVENT_AD_LOADED, payload);
     }
   }
 

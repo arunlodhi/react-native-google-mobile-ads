@@ -31,7 +31,7 @@ class ReactNativeGoogleMobileAdsCachedBannerModule(reactContext: ReactApplicatio
     NativeCachedBannerModuleSpec(reactContext) {
 
     private val cachedBannerAds = ConcurrentHashMap<String, BaseAdView>()
-    private val cachedAdInfo = ConcurrentHashMap<String, WritableMap>()
+    private val cachedAdInfo = ConcurrentHashMap<String, Map<String, Any>>()
 
     override fun getName(): String {
         return NAME
@@ -50,7 +50,14 @@ class ReactNativeGoogleMobileAdsCachedBannerModule(reactContext: ReactApplicatio
 
         // Check if ad already exists
         cachedAdInfo[requestId]?.let { existingInfo ->
-            promise.resolve(existingInfo)
+            val adInfo = Arguments.createMap().apply {
+                putString("requestId", existingInfo["requestId"] as String)
+                putString("unitId", existingInfo["unitId"] as String)
+                putBoolean("isLoaded", existingInfo["isLoaded"] as Boolean)
+                putDouble("width", existingInfo["width"] as Double)
+                putDouble("height", existingInfo["height"] as Double)
+            }
+            promise.resolve(adInfo)
             return
         }
 
@@ -108,6 +115,16 @@ class ReactNativeGoogleMobileAdsCachedBannerModule(reactContext: ReactApplicatio
                         val width = adSize?.getWidthInPixels(currentActivity) ?: 0
                         val height = adSize?.getHeightInPixels(currentActivity) ?: 0
 
+                        val adInfoData = mapOf(
+                            "requestId" to requestId,
+                            "unitId" to unitId,
+                            "isLoaded" to true,
+                            "width" to width.toDouble(),
+                            "height" to height.toDouble()
+                        )
+
+                        cachedAdInfo[requestId] = adInfoData
+                        
                         val adInfo = Arguments.createMap().apply {
                             putString("requestId", requestId)
                             putString("unitId", unitId)
@@ -115,21 +132,19 @@ class ReactNativeGoogleMobileAdsCachedBannerModule(reactContext: ReactApplicatio
                             putDouble("width", width.toDouble())
                             putDouble("height", height.toDouble())
                         }
-
-                        cachedAdInfo[requestId] = adInfo
                         promise.resolve(adInfo)
                     }
 
                     override fun onAdFailedToLoad(loadAdError: LoadAdError) {
-                        val adInfo = Arguments.createMap().apply {
-                            putString("requestId", requestId)
-                            putString("unitId", unitId)
-                            putBoolean("isLoaded", false)
-                            putDouble("width", 0.0)
-                            putDouble("height", 0.0)
-                        }
+                        val adInfoData = mapOf(
+                            "requestId" to requestId,
+                            "unitId" to unitId,
+                            "isLoaded" to false,
+                            "width" to 0.0,
+                            "height" to 0.0
+                        )
 
-                        cachedAdInfo[requestId] = adInfo
+                        cachedAdInfo[requestId] = adInfoData
                         promise.reject("ad_load_failed", loadAdError.message)
                     }
                 }
@@ -155,8 +170,15 @@ class ReactNativeGoogleMobileAdsCachedBannerModule(reactContext: ReactApplicatio
 
     @ReactMethod
     override fun getCachedAdInfo(requestId: String, promise: Promise) {
-        val adInfo = cachedAdInfo[requestId]
-        if (adInfo != null) {
+        val adInfoData = cachedAdInfo[requestId]
+        if (adInfoData != null) {
+            val adInfo = Arguments.createMap().apply {
+                putString("requestId", adInfoData["requestId"] as String)
+                putString("unitId", adInfoData["unitId"] as String)
+                putBoolean("isLoaded", adInfoData["isLoaded"] as Boolean)
+                putDouble("width", adInfoData["width"] as Double)
+                putDouble("height", adInfoData["height"] as Double)
+            }
             promise.resolve(adInfo)
         } else {
             promise.reject("not_found", "Cached ad not found")
