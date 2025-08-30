@@ -20,7 +20,7 @@ package io.invertase.googlemobileads
 import android.app.Activity
 import com.facebook.react.bridge.*
 import com.facebook.react.module.annotations.ReactModule
-import com.facebook.react.uimanager.UiThreadUtil
+import com.facebook.react.bridge.UiThreadUtil
 import com.google.android.gms.ads.*
 import com.google.android.gms.ads.admanager.AdManagerAdView
 import com.google.android.gms.ads.admanager.AppEventListener
