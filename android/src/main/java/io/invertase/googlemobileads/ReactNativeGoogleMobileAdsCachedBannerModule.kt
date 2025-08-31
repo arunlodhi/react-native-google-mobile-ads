@@ -25,6 +25,7 @@ import com.google.android.gms.ads.*
 import com.google.android.gms.ads.admanager.AdManagerAdView
 import com.google.android.gms.ads.admanager.AppEventListener
 import java.util.concurrent.ConcurrentHashMap
+import java.util.UUID
 
 @ReactModule(name = ReactNativeGoogleMobileAdsCachedBannerModule.NAME)
 class ReactNativeGoogleMobileAdsCachedBannerModule(reactContext: ReactApplicationContext) :
@@ -39,19 +40,18 @@ class ReactNativeGoogleMobileAdsCachedBannerModule(reactContext: ReactApplicatio
 
     @ReactMethod
     override fun requestCachedBannerAd(config: ReadableMap, promise: Promise) {
-        val requestId = config.getString("requestId")
         val unitId = config.getString("unitId")
         val isGAM = config.getBoolean("isGAM")
 
-        if (requestId == null || unitId == null) {
-            promise.reject("invalid_config", "requestId and unitId are required")
+        if (unitId == null) {
+            promise.reject("invalid_config", "unitId is required")
             return
         }
 
-        // Check if ad already exists
-        cachedAdInfo[requestId]?.let { existingInfo ->
-            // Don't remove from parent here - let the view manager handle parent removal
-            // when the ad view is actually being attached to a new parent
+        // Check if an ad with the same configuration already exists
+        val existingRequestId = findExistingAdForConfig(config)
+        if (existingRequestId != null) {
+            val existingInfo = cachedAdInfo[existingRequestId]!!
             val adInfo = Arguments.createMap().apply {
                 putString("requestId", existingInfo["requestId"] as String)
                 putString("unitId", existingInfo["unitId"] as String)
@@ -62,6 +62,9 @@ class ReactNativeGoogleMobileAdsCachedBannerModule(reactContext: ReactApplicatio
             promise.resolve(adInfo)
             return
         }
+
+        // Generate new requestId for this ad configuration
+        val requestId = generateRequestId(config)
 
         val currentActivity = currentActivity
         if (currentActivity == null) {
@@ -110,6 +113,21 @@ class ReactNativeGoogleMobileAdsCachedBannerModule(reactContext: ReactApplicatio
                 }
                 val adRequest = ReactNativeGoogleMobileAdsCommon.buildAdRequest(requestOptions)
 
+                // Prepare configuration data for matching
+                val size = config.getString("size") ?: ""
+                val sizesString = if (isGAM && config.hasKey("sizes")) {
+                    val sizes = config.getArray("sizes")
+                    val sizesList = mutableListOf<String>()
+                    if (sizes != null) {
+                        for (i in 0 until sizes.size()) {
+                            sizes.getString(i)?.let { sizesList.add(it) }
+                        }
+                    }
+                    sizesList.sorted().joinToString(",")
+                } else {
+                    size
+                }
+
                 // Set up ad listener
                 adView.adListener = object : AdListener() {
                     override fun onAdLoaded() {
@@ -120,6 +138,8 @@ class ReactNativeGoogleMobileAdsCachedBannerModule(reactContext: ReactApplicatio
                         val adInfoData = mapOf(
                             "requestId" to requestId,
                             "unitId" to unitId,
+                            "isGAM" to isGAM,
+                            "sizesString" to sizesString,
                             "isLoaded" to true,
                             "width" to width.toDouble(),
                             "height" to height.toDouble()
@@ -141,6 +161,8 @@ class ReactNativeGoogleMobileAdsCachedBannerModule(reactContext: ReactApplicatio
                         val adInfoData = mapOf(
                             "requestId" to requestId,
                             "unitId" to unitId,
+                            "isGAM" to isGAM,
+                            "sizesString" to sizesString,
                             "isLoaded" to false,
                             "width" to 0.0,
                             "height" to 0.0
@@ -263,6 +285,46 @@ class ReactNativeGoogleMobileAdsCachedBannerModule(reactContext: ReactApplicatio
 
         android.util.Log.d("CachedBannerModule", "Returning original cached ad view for requestId: $requestId")
         return originalAdView
+    }
+
+    fun getRequestIdForConfig(config: ReadableMap): String? {
+        return generateRequestId(config)
+    }
+
+    private fun findExistingAdForConfig(config: ReadableMap): String? {
+        val unitId = config.getString("unitId") ?: return null
+        val isGAM = config.getBoolean("isGAM")
+        val size = config.getString("size") ?: ""
+        
+        // For GAM ads, get sizes array
+        val sizesString = if (isGAM && config.hasKey("sizes")) {
+            val sizes = config.getArray("sizes")
+            val sizesList = mutableListOf<String>()
+            if (sizes != null) {
+                for (i in 0 until sizes.size()) {
+                    sizes.getString(i)?.let { sizesList.add(it) }
+                }
+            }
+            sizesList.sorted().joinToString(",")
+        } else {
+            size
+        }
+
+        // Check all cached ads to see if any match this configuration
+        for ((requestId, adInfo) in cachedAdInfo) {
+            if (adInfo["unitId"] == unitId && 
+                adInfo["isGAM"] == isGAM &&
+                adInfo["sizesString"] == sizesString) {
+                return requestId
+            }
+        }
+        
+        return null
+    }
+
+    private fun generateRequestId(config: ReadableMap): String {
+        // Generate a unique UUID for each ad request
+        return UUID.randomUUID().toString()
     }
 
     companion object {
