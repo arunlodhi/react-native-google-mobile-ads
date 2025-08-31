@@ -297,7 +297,7 @@ public class ReactNativeGoogleMobileAdsCachedBannerViewManager
       if (e.getMessage() != null && e.getMessage().contains("already has a parent")) {
         android.util.Log.w("CachedBannerView", "Child already has parent error, forcing removal and retrying");
         
-        // Force remove from any parent
+        // Force remove from any parent using multiple approaches
         ViewGroup currentParent = (ViewGroup) cachedAdView.getParent();
         if (currentParent != null) {
           try {
@@ -308,17 +308,46 @@ public class ReactNativeGoogleMobileAdsCachedBannerViewManager
           }
         }
         
+        // Use reflection to forcefully clear the parent reference if still exists
+        if (cachedAdView.getParent() != null) {
+          try {
+            java.lang.reflect.Field parentField = android.view.View.class.getDeclaredField("mParent");
+            parentField.setAccessible(true);
+            parentField.set(cachedAdView, null);
+            android.util.Log.d("CachedBannerView", "Forcefully cleared parent using reflection");
+          } catch (Exception reflectionEx) {
+            android.util.Log.w("CachedBannerView", "Failed to clear parent via reflection: " + reflectionEx.getMessage());
+          }
+        }
+        
         // Try adding again
         try {
           reactViewGroup.addView(cachedAdView);
           android.util.Log.d("CachedBannerView", "Successfully added cached ad view after force removal");
         } catch (Exception retryEx) {
           android.util.Log.e("CachedBannerView", "Failed to add view even after force removal: " + retryEx.getMessage());
-          WritableMap payload = Arguments.createMap();
-          payload.putString("code", "view-attachment-failed");
-          payload.putString("message", "Failed to attach cached ad view: " + retryEx.getMessage());
-          sendEvent(reactViewGroup, EVENT_AD_FAILED_TO_LOAD, payload);
-          return;
+          
+          // Last resort: create a new container view and add the ad view to it
+          try {
+            android.widget.FrameLayout wrapper = new android.widget.FrameLayout(reactViewGroup.getContext());
+            wrapper.setLayoutParams(layoutParams);
+            
+            // Clear parent one more time before adding to wrapper
+            if (cachedAdView.getParent() != null) {
+              ((ViewGroup) cachedAdView.getParent()).removeView(cachedAdView);
+            }
+            
+            wrapper.addView(cachedAdView);
+            reactViewGroup.addView(wrapper);
+            android.util.Log.d("CachedBannerView", "Successfully added cached ad view using wrapper approach");
+          } catch (Exception wrapperEx) {
+            android.util.Log.e("CachedBannerView", "Even wrapper approach failed: " + wrapperEx.getMessage());
+            WritableMap payload = Arguments.createMap();
+            payload.putString("code", "view-attachment-failed");
+            payload.putString("message", "Failed to attach cached ad view: " + wrapperEx.getMessage());
+            sendEvent(reactViewGroup, EVENT_AD_FAILED_TO_LOAD, payload);
+            return;
+          }
         }
       } else {
         android.util.Log.e("CachedBannerView", "Unexpected error adding view: " + e.getMessage());
