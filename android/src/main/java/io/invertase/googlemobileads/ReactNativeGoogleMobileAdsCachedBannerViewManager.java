@@ -90,9 +90,13 @@ public class ReactNativeGoogleMobileAdsCachedBannerViewManager
 
   @ReactProp(name = "requestId")
   public void setRequestId(ReactNativeAdView reactViewGroup, String requestId) {
+    android.util.Log.d("CachedBannerView", "setRequestId called with: " + requestId);
+    
     if (requestId != null) {
       // Check if we already have the same requestId attached to avoid unnecessary re-setup
       BaseAdView currentAdView = getCachedAdView(reactViewGroup);
+      android.util.Log.d("CachedBannerView", "Current ad view: " + (currentAdView != null ? "exists" : "null"));
+      
       if (currentAdView != null) {
         // Get the current requestId from the view tag or compare with cached module
         ReactContext reactContext = (ReactContext) reactViewGroup.getContext();
@@ -101,14 +105,25 @@ public class ReactNativeGoogleMobileAdsCachedBannerViewManager
         
         if (cachedBannerModule != null) {
           BaseAdView cachedAdView = cachedBannerModule.getCachedBannerView(requestId);
+          android.util.Log.d("CachedBannerView", "Cached ad view: " + (cachedAdView != null ? "exists" : "null"));
+          android.util.Log.d("CachedBannerView", "Same ad view? " + (currentAdView == cachedAdView));
+          
           // If the current ad view is the same as the cached one, no need to re-setup
           if (currentAdView == cachedAdView) {
             android.util.Log.d("CachedBannerView", "Same requestId and ad view, skipping re-setup");
+            
+            // But we should still trigger onAdLoaded event to ensure JS gets the dimensions
+            WritableMap payload = Arguments.createMap();
+            payload.putDouble("width", PixelUtil.toDIPFromPixel(currentAdView.getWidth()));
+            payload.putDouble("height", PixelUtil.toDIPFromPixel(currentAdView.getHeight()));
+            sendEvent(reactViewGroup, EVENT_AD_LOADED, payload);
+            
             return;
           }
         }
       }
       
+      android.util.Log.d("CachedBannerView", "Proceeding with setupCachedAdView");
       setupCachedAdView(reactViewGroup, requestId);
     }
   }

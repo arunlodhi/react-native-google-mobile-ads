@@ -34,23 +34,32 @@ export const CachedBaseAd = React.forwardRef<
   CachedBaseAdProps
 >(({ requestId, ...props }, ref) => {
   const [dimensions, setDimensions] = useState<(number | DimensionValue)[]>([0, 0]);
+  const [currentRequestId, setCurrentRequestId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!requestId) {
       throw new Error("CachedBaseAd: 'requestId' expected a valid string.");
     }
 
+    // Only reset dimensions if requestId actually changed
+    if (currentRequestId !== requestId) {
+      setCurrentRequestId(requestId);
+      setDimensions([0, 0]); // Reset dimensions for new requestId
+    }
+
     // Get cached ad info to determine dimensions
     getCachedAdInfo(requestId)
       .then(adInfo => {
+        console.log('CachedBaseAd: getCachedAdInfo success for', requestId, adInfo);
         if (adInfo.width && adInfo.height) {
           setDimensions([adInfo.width, adInfo.height]);
         }
       })
-      .catch(() => {
+      .catch(error => {
+        console.log('CachedBaseAd: getCachedAdInfo failed for', requestId, error);
         // Ad might not be loaded yet, dimensions will be set when onAdLoaded is called
       });
-  }, [requestId]);
+  }, [requestId, currentRequestId]);
 
   function onNativeEvent(event: NativeSyntheticEvent<NativeEvent>) {
     const nativeEvent = event.nativeEvent as
