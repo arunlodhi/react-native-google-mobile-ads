@@ -145,10 +145,15 @@ public class ReactNativeGoogleMobileAdsCachedBannerViewManager
         reactContext.getNativeModule(ReactNativeGoogleMobileAdsCachedBannerModule.class);
 
     if (cachedBannerModule != null) {
-      BaseAdView cachedAdView = cachedBannerModule.getCachedBannerView(requestId);
+      // Instead of reusing the ad view, check if we have cached ad info and create a new view
+      // This avoids all the parent-child relationship issues
+      android.util.Log.d("CachedBannerView", "Requesting new ad view for cached ad: " + requestId);
       
-      if (cachedAdView != null) {
-        attachCachedAdView(reactViewGroup, cachedAdView);
+      // Ask the module to create a new view instance for this cached ad
+      BaseAdView newAdView = cachedBannerModule.createNewViewForCachedAd(requestId);
+      
+      if (newAdView != null) {
+        attachNewAdView(reactViewGroup, newAdView);
       } else {
         // Ad not ready yet, send a failed to load event to indicate the ad is not available
         WritableMap payload = Arguments.createMap();
@@ -163,6 +168,99 @@ public class ReactNativeGoogleMobileAdsCachedBannerViewManager
       payload.putString("message", "Cached banner module is not available");
       sendEvent(reactViewGroup, EVENT_AD_FAILED_TO_LOAD, payload);
     }
+  }
+
+  private void attachNewAdView(ReactNativeAdView reactViewGroup, BaseAdView newAdView) {
+    // This method handles fresh ad views that don't have parent issues
+    android.util.Log.d("CachedBannerView", "Attaching new ad view (no parent issues)");
+    
+    // Set up event listeners
+    newAdView.setOnPaidEventListener(
+        new OnPaidEventListener() {
+          @Override
+          public void onPaidEvent(AdValue adValue) {
+            WritableMap payload = Arguments.createMap();
+            payload.putDouble("value", 1e-6 * adValue.getValueMicros());
+            payload.putDouble("precision", adValue.getPrecisionType());
+            payload.putString("currency", adValue.getCurrencyCode());
+            sendEvent(reactViewGroup, EVENT_PAID, payload);
+          }
+        });
+
+    newAdView.setAdListener(
+        new AdListener() {
+          @Override
+          public void onAdLoaded() {
+            WritableMap payload = Arguments.createMap();
+            payload.putDouble("width", PixelUtil.toDIPFromPixel(newAdView.getWidth()));
+            payload.putDouble("height", PixelUtil.toDIPFromPixel(newAdView.getHeight()));
+            sendEvent(reactViewGroup, EVENT_AD_LOADED, payload);
+          }
+
+          @Override
+          public void onAdFailedToLoad(@NonNull LoadAdError loadAdError) {
+            int errorCode = loadAdError.getCode();
+            WritableMap payload = ReactNativeGoogleMobileAdsCommon.errorCodeToMap(errorCode);
+            sendEvent(reactViewGroup, EVENT_AD_FAILED_TO_LOAD, payload);
+          }
+
+          @Override
+          public void onAdOpened() {
+            sendEvent(reactViewGroup, EVENT_AD_OPENED, null);
+          }
+
+          @Override
+          public void onAdClosed() {
+            sendEvent(reactViewGroup, EVENT_AD_CLOSED, null);
+          }
+
+          @Override
+          public void onAdImpression() {
+            sendEvent(reactViewGroup, EVENT_AD_IMPRESSION, null);
+          }
+
+          @Override
+          public void onAdClicked() {
+            sendEvent(reactViewGroup, EVENT_AD_CLICKED, null);
+          }
+        });
+
+    if (newAdView instanceof AdManagerAdView) {
+      ((AdManagerAdView) newAdView)
+          .setAppEventListener(
+              new AppEventListener() {
+                @Override
+                public void onAppEvent(@NonNull String name, @Nullable String data) {
+                  WritableMap payload = Arguments.createMap();
+                  payload.putString("name", name);
+                  payload.putString("data", data);
+                  sendEvent(reactViewGroup, EVENT_APP_EVENT, payload);
+                }
+              });
+    }
+
+    // Add to view hierarchy with proper layout parameters
+    ViewGroup.LayoutParams layoutParams = new ViewGroup.LayoutParams(
+        ViewGroup.LayoutParams.WRAP_CONTENT,
+        ViewGroup.LayoutParams.WRAP_CONTENT
+    );
+    newAdView.setLayoutParams(layoutParams);
+    reactViewGroup.addView(newAdView);
+    
+    android.util.Log.d("CachedBannerView", "Successfully added new ad view");
+    
+    // Trigger onAdLoaded event immediately since this is a pre-loaded cached ad
+    newAdView.post(new Runnable() {
+      @Override
+      public void run() {
+        newAdView.requestLayout();
+        
+        WritableMap payload = Arguments.createMap();
+        payload.putDouble("width", PixelUtil.toDIPFromPixel(newAdView.getWidth()));
+        payload.putDouble("height", PixelUtil.toDIPFromPixel(newAdView.getHeight()));
+        sendEvent(reactViewGroup, EVENT_AD_LOADED, payload);
+      }
+    });
   }
 
   private void attachCachedAdView(ReactNativeAdView reactViewGroup, BaseAdView cachedAdView) {
