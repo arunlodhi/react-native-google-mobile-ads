@@ -145,15 +145,13 @@ public class ReactNativeGoogleMobileAdsCachedBannerViewManager
         reactContext.getNativeModule(ReactNativeGoogleMobileAdsCachedBannerModule.class);
 
     if (cachedBannerModule != null) {
-      // Instead of reusing the ad view, check if we have cached ad info and create a new view
-      // This avoids all the parent-child relationship issues
-      android.util.Log.d("CachedBannerView", "Requesting new ad view for cached ad: " + requestId);
+      // Get the cached ad view and attach it with proper parent handling
+      android.util.Log.d("CachedBannerView", "Getting cached ad view for requestId: " + requestId);
       
-      // Ask the module to create a new view instance for this cached ad
-      BaseAdView newAdView = cachedBannerModule.createNewViewForCachedAd(requestId);
+      BaseAdView cachedAdView = cachedBannerModule.getCachedBannerView(requestId);
       
-      if (newAdView != null) {
-        attachNewAdView(reactViewGroup, newAdView);
+      if (cachedAdView != null) {
+        attachCachedAdView(reactViewGroup, cachedAdView);
       } else {
         // Ad not ready yet, send a failed to load event to indicate the ad is not available
         WritableMap payload = Arguments.createMap();

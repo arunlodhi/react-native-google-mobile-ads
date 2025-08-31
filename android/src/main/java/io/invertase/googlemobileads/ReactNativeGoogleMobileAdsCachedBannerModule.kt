@@ -253,48 +253,16 @@ class ReactNativeGoogleMobileAdsCachedBannerModule(reactContext: ReactApplicatio
             return null
         }
 
-        val currentActivity = currentActivity
-        if (currentActivity == null) {
-            android.util.Log.e("CachedBannerModule", "No current activity available for creating new view")
+        // For now, let's go back to reusing the original ad view but with better parent handling
+        // The issue with creating new views is that they don't have the loaded ad content
+        val originalAdView = cachedBannerAds[requestId]
+        if (originalAdView == null) {
+            android.util.Log.e("CachedBannerModule", "Original ad view not found for requestId: $requestId")
             return null
         }
 
-        return try {
-            // Get the original cached ad view to copy its configuration
-            val originalAdView = cachedBannerAds[requestId]
-            if (originalAdView == null) {
-                android.util.Log.e("CachedBannerModule", "Original ad view not found for requestId: $requestId")
-                return null
-            }
-
-            // Create a new ad view with the same configuration
-            val newAdView: BaseAdView = if (originalAdView is AdManagerAdView) {
-                val newGamView = AdManagerAdView(currentActivity)
-                newGamView.adUnitId = originalAdView.adUnitId
-                
-                // Copy ad sizes
-                val adSizes = originalAdView.adSizes
-                if (adSizes != null && adSizes.isNotEmpty()) {
-                    newGamView.setAdSizes(*adSizes)
-                }
-                
-                newGamView
-            } else {
-                val newBannerView = AdView(currentActivity)
-                newBannerView.adUnitId = originalAdView.adUnitId
-                originalAdView.adSize?.let { adSize ->
-                    newBannerView.setAdSize(adSize)
-                }
-                newBannerView
-            }
-
-            android.util.Log.d("CachedBannerModule", "Created new ad view for requestId: $requestId")
-            newAdView
-            
-        } catch (e: Exception) {
-            android.util.Log.e("CachedBannerModule", "Failed to create new view for cached ad: ${e.message}")
-            null
-        }
+        android.util.Log.d("CachedBannerModule", "Returning original cached ad view for requestId: $requestId")
+        return originalAdView
     }
 
     companion object {
