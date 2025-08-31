@@ -282,7 +282,9 @@ class ReactNativeGoogleMobileAdsCachedBannerModule(reactContext: ReactApplicatio
             } else {
                 val newBannerView = AdView(currentActivity)
                 newBannerView.adUnitId = originalAdView.adUnitId
-                newBannerView.setAdSize(originalAdView.adSize)
+                originalAdView.adSize?.let { adSize ->
+                    newBannerView.setAdSize(adSize)
+                }
                 newBannerView
             }
 
