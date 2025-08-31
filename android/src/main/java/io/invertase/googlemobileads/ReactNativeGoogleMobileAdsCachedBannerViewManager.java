@@ -91,6 +91,24 @@ public class ReactNativeGoogleMobileAdsCachedBannerViewManager
   @ReactProp(name = "requestId")
   public void setRequestId(ReactNativeAdView reactViewGroup, String requestId) {
     if (requestId != null) {
+      // Check if we already have the same requestId attached to avoid unnecessary re-setup
+      BaseAdView currentAdView = getCachedAdView(reactViewGroup);
+      if (currentAdView != null) {
+        // Get the current requestId from the view tag or compare with cached module
+        ReactContext reactContext = (ReactContext) reactViewGroup.getContext();
+        ReactNativeGoogleMobileAdsCachedBannerModule cachedBannerModule = 
+            reactContext.getNativeModule(ReactNativeGoogleMobileAdsCachedBannerModule.class);
+        
+        if (cachedBannerModule != null) {
+          BaseAdView cachedAdView = cachedBannerModule.getCachedBannerView(requestId);
+          // If the current ad view is the same as the cached one, no need to re-setup
+          if (currentAdView == cachedAdView) {
+            android.util.Log.d("CachedBannerView", "Same requestId and ad view, skipping re-setup");
+            return;
+          }
+        }
+      }
+      
       setupCachedAdView(reactViewGroup, requestId);
     }
   }
