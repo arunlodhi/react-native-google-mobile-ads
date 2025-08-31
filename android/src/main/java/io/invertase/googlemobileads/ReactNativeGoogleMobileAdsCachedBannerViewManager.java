@@ -168,32 +168,53 @@ public class ReactNativeGoogleMobileAdsCachedBannerViewManager
   private void attachCachedAdView(ReactNativeAdView reactViewGroup, BaseAdView cachedAdView) {
     // Remove from previous parent if any - this is critical for reusing cached ads
     ViewGroup parent = (ViewGroup) cachedAdView.getParent();
+    android.util.Log.d("CachedBannerView", "Initial parent: " + (parent != null ? parent.getClass().getSimpleName() : "null"));
+    
     if (parent != null) {
       try {
         parent.removeView(cachedAdView);
         android.util.Log.d("CachedBannerView", "Removed cached ad from previous parent: " + parent.getClass().getSimpleName());
+        
+        // Force a layout pass to ensure the removal is processed
+        parent.requestLayout();
+        parent.invalidate();
+        
       } catch (Exception e) {
-        // In case of any issues removing from parent, log but continue
         android.util.Log.w("CachedBannerView", "Error removing cached ad from parent: " + e.getMessage());
-        // Force removal by setting parent to null if possible
-        try {
-          if (cachedAdView.getParent() != null) {
-            ((ViewGroup) cachedAdView.getParent()).removeView(cachedAdView);
-          }
-        } catch (Exception ex) {
-          android.util.Log.e("CachedBannerView", "Failed to force remove from parent: " + ex.getMessage());
-        }
       }
     }
     
-    // Double check that parent is null before proceeding
+    // Multiple attempts to ensure parent is null
+    int attempts = 0;
+    while (cachedAdView.getParent() != null && attempts < 3) {
+      attempts++;
+      android.util.Log.d("CachedBannerView", "Attempt " + attempts + " to remove parent");
+      
+      try {
+        ViewGroup currentParent = (ViewGroup) cachedAdView.getParent();
+        currentParent.removeView(cachedAdView);
+        currentParent.requestLayout();
+        currentParent.invalidate();
+        
+        // Small delay to allow the removal to process
+        try {
+          Thread.sleep(10);
+        } catch (InterruptedException ie) {
+          Thread.currentThread().interrupt();
+        }
+        
+      } catch (Exception ex) {
+        android.util.Log.w("CachedBannerView", "Attempt " + attempts + " failed: " + ex.getMessage());
+        break;
+      }
+    }
+    
+    // Final check - if still has parent, force proceed but log warning
     if (cachedAdView.getParent() != null) {
-      android.util.Log.w("CachedBannerView", "Ad view still has parent after removal attempt, skipping attachment");
-      WritableMap payload = Arguments.createMap();
-      payload.putString("code", "parent-removal-failed");
-      payload.putString("message", "Failed to remove cached ad from previous parent");
-      sendEvent(reactViewGroup, EVENT_AD_FAILED_TO_LOAD, payload);
-      return;
+      android.util.Log.w("CachedBannerView", "Ad view still has parent after " + attempts + " attempts, forcing attachment anyway");
+      // Don't return here - try to proceed with attachment
+    } else {
+      android.util.Log.d("CachedBannerView", "Successfully removed parent after " + attempts + " attempts");
     }
 
     // Set up event listeners
