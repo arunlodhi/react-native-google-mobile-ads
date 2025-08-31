@@ -288,7 +288,47 @@ public class ReactNativeGoogleMobileAdsCachedBannerViewManager
         ViewGroup.LayoutParams.WRAP_CONTENT
     );
     cachedAdView.setLayoutParams(layoutParams);
-    reactViewGroup.addView(cachedAdView);
+    
+    // Try to add the view, if it fails due to parent issues, force remove and try again
+    try {
+      reactViewGroup.addView(cachedAdView);
+      android.util.Log.d("CachedBannerView", "Successfully added cached ad view to new parent");
+    } catch (IllegalStateException e) {
+      if (e.getMessage() != null && e.getMessage().contains("already has a parent")) {
+        android.util.Log.w("CachedBannerView", "Child already has parent error, forcing removal and retrying");
+        
+        // Force remove from any parent
+        ViewGroup currentParent = (ViewGroup) cachedAdView.getParent();
+        if (currentParent != null) {
+          try {
+            currentParent.removeView(cachedAdView);
+            android.util.Log.d("CachedBannerView", "Force removed from parent: " + currentParent.getClass().getSimpleName());
+          } catch (Exception removeEx) {
+            android.util.Log.e("CachedBannerView", "Failed to force remove: " + removeEx.getMessage());
+          }
+        }
+        
+        // Try adding again
+        try {
+          reactViewGroup.addView(cachedAdView);
+          android.util.Log.d("CachedBannerView", "Successfully added cached ad view after force removal");
+        } catch (Exception retryEx) {
+          android.util.Log.e("CachedBannerView", "Failed to add view even after force removal: " + retryEx.getMessage());
+          WritableMap payload = Arguments.createMap();
+          payload.putString("code", "view-attachment-failed");
+          payload.putString("message", "Failed to attach cached ad view: " + retryEx.getMessage());
+          sendEvent(reactViewGroup, EVENT_AD_FAILED_TO_LOAD, payload);
+          return;
+        }
+      } else {
+        android.util.Log.e("CachedBannerView", "Unexpected error adding view: " + e.getMessage());
+        WritableMap payload = Arguments.createMap();
+        payload.putString("code", "view-attachment-failed");
+        payload.putString("message", "Failed to attach cached ad view: " + e.getMessage());
+        sendEvent(reactViewGroup, EVENT_AD_FAILED_TO_LOAD, payload);
+        return;
+      }
+    }
     
     // Force a layout pass to ensure the ad view is properly sized and positioned
     cachedAdView.post(new Runnable() {
