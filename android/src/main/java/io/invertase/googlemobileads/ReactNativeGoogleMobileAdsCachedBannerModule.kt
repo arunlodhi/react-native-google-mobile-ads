@@ -50,6 +50,17 @@ class ReactNativeGoogleMobileAdsCachedBannerModule(reactContext: ReactApplicatio
 
         // Check if ad already exists
         cachedAdInfo[requestId]?.let { existingInfo ->
+            // If ad already exists, ensure it's properly detached from any parent
+            val existingAdView = cachedBannerAds[requestId]
+            if (existingAdView != null) {
+                UiThreadUtil.runOnUiThread {
+                    val parent = existingAdView.parent as? android.view.ViewGroup
+                    if (parent != null) {
+                        parent.removeView(existingAdView)
+                    }
+                }
+            }
+            
             val adInfo = Arguments.createMap().apply {
                 putString("requestId", existingInfo["requestId"] as String)
                 putString("unitId", existingInfo["unitId"] as String)

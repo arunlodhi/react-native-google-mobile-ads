@@ -133,11 +133,19 @@ public class ReactNativeGoogleMobileAdsCachedBannerViewManager
   }
 
   private void attachCachedAdView(ReactNativeAdView reactViewGroup, BaseAdView cachedAdView) {
-    // Remove from previous parent if any
+    // Remove from previous parent if any - this is critical for reusing cached ads
     ViewGroup parent = (ViewGroup) cachedAdView.getParent();
     if (parent != null) {
-      parent.removeView(cachedAdView);
+      try {
+        parent.removeView(cachedAdView);
+      } catch (Exception e) {
+        // In case of any issues removing from parent, log but continue
+        android.util.Log.w("CachedBannerView", "Error removing cached ad from parent: " + e.getMessage());
+      }
     }
+    
+    // Clear any existing layout parameters to ensure clean attachment
+    cachedAdView.setLayoutParams(null);
 
     // Set up event listeners
     cachedAdView.setOnPaidEventListener(
