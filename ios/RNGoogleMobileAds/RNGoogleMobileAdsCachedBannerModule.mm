@@ -79,12 +79,8 @@ RCT_EXPORT_METHOD(requestCachedBannerAd:(NSDictionary *)config
   
   // Check if ad already exists
   if (self.cachedBannerAds[requestId]) {
-    // If ad already exists, ensure it's properly detached from any parent
-    GADBannerView *existingBannerView = self.cachedBannerAds[requestId];
-    if (existingBannerView.superview) {
-      [existingBannerView removeFromSuperview];
-    }
-    
+    // Don't remove from superview here - let the component handle parent removal
+    // when the ad view is actually being attached to a new parent
     NSDictionary *existingInfo = self.cachedAdInfo[requestId];
     resolve(existingInfo);
     return;
