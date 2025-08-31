@@ -204,16 +204,27 @@ public class ReactNativeGoogleMobileAdsCachedBannerViewManager
               });
     }
 
-    // Add to view hierarchy
+    // Add to view hierarchy with proper layout parameters
+    ViewGroup.LayoutParams layoutParams = new ViewGroup.LayoutParams(
+        ViewGroup.LayoutParams.WRAP_CONTENT,
+        ViewGroup.LayoutParams.WRAP_CONTENT
+    );
+    cachedAdView.setLayoutParams(layoutParams);
     reactViewGroup.addView(cachedAdView);
     
-    // Trigger onAdLoaded event immediately if the ad is already loaded
-    if (cachedAdView.getWidth() > 0 && cachedAdView.getHeight() > 0) {
-      WritableMap payload = Arguments.createMap();
-      payload.putDouble("width", PixelUtil.toDIPFromPixel(cachedAdView.getWidth()));
-      payload.putDouble("height", PixelUtil.toDIPFromPixel(cachedAdView.getHeight()));
-      sendEvent(reactViewGroup, EVENT_AD_LOADED, payload);
-    }
+    // Force a layout pass to ensure the ad view is properly sized and positioned
+    cachedAdView.post(new Runnable() {
+      @Override
+      public void run() {
+        cachedAdView.requestLayout();
+        
+        // Trigger onAdLoaded event after layout is complete
+        WritableMap payload = Arguments.createMap();
+        payload.putDouble("width", PixelUtil.toDIPFromPixel(cachedAdView.getWidth()));
+        payload.putDouble("height", PixelUtil.toDIPFromPixel(cachedAdView.getHeight()));
+        sendEvent(reactViewGroup, EVENT_AD_LOADED, payload);
+      }
+    });
   }
 
   @Nullable
