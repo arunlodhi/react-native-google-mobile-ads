@@ -145,7 +145,7 @@ public class ReactNativeGoogleMobileAdsCachedBannerViewManager
     }
     
     // Clear any existing layout parameters to ensure clean attachment
-    cachedAdView.setLayoutParams(null);
+    // Don't set to null as it causes crashes, instead we'll set proper params below
 
     // Set up event listeners
     cachedAdView.setOnPaidEventListener(
