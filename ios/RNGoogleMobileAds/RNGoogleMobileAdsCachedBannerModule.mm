@@ -76,15 +76,7 @@ RCT_EXPORT_METHOD(requestCachedBannerAd:(NSDictionary *)config
     return;
   }
   
-  // Check if an ad with the same configuration already exists
-  NSString *existingRequestId = [self findExistingAdForConfig:config];
-  if (existingRequestId) {
-    NSDictionary *existingInfo = self.cachedAdInfo[existingRequestId];
-    resolve(existingInfo);
-    return;
-  }
-  
-  // Generate new requestId for this ad configuration
+  // Always generate a new requestId for each request
   NSString *requestId = [self generateRequestId];
   
   GADBannerView *bannerView;
@@ -116,23 +108,6 @@ RCT_EXPORT_METHOD(requestCachedBannerAd:(NSDictionary *)config
     }
   }
   
-  // Prepare configuration data for matching
-  NSString *size = config[@"size"] ?: @"";
-  NSString *sizesString;
-  if (isGAM && config[@"sizes"]) {
-    NSArray *sizes = config[@"sizes"];
-    NSMutableArray *sizesList = [[NSMutableArray alloc] init];
-    for (NSString *sizeStr in sizes) {
-      if (sizeStr) {
-        [sizesList addObject:sizeStr];
-      }
-    }
-    [sizesList sortUsingSelector:@selector(localizedCaseInsensitiveCompare:)];
-    sizesString = [sizesList componentsJoinedByString:@","];
-  } else {
-    sizesString = size;
-  }
-  
   // Create ad request
   GADRequest *request = [RNGoogleMobileAdsCommon buildAdRequest:config[@"requestOptions"]];
   
@@ -141,9 +116,7 @@ RCT_EXPORT_METHOD(requestCachedBannerAd:(NSDictionary *)config
   bannerView.delegate = [[RNGoogleMobileAdsCachedBannerDelegate alloc] initWithRequestId:requestId
                                                                                 resolver:resolve
                                                                                 rejecter:reject
-                                                                                  module:weakSelf
-                                                                                   isGAM:isGAM
-                                                                             sizesString:sizesString];
+                                                                                  module:weakSelf];
   
   // Store the banner view
   self.cachedBannerAds[requestId] = bannerView;
@@ -215,39 +188,6 @@ RCT_EXPORT_METHOD(clearAllCachedAds:(RCTPromiseResolveBlock)resolve
   self.cachedAdInfo[requestId] = adInfo;
 }
 
-- (NSString *)findExistingAdForConfig:(NSDictionary *)config {
-  NSString *unitId = config[@"unitId"];
-  BOOL isGAM = [config[@"isGAM"] boolValue];
-  NSString *size = config[@"size"] ?: @"";
-  
-  // For GAM ads, get sizes array
-  NSString *sizesString;
-  if (isGAM && config[@"sizes"]) {
-    NSArray *sizes = config[@"sizes"];
-    NSMutableArray *sizesList = [[NSMutableArray alloc] init];
-    for (NSString *sizeStr in sizes) {
-      if (sizeStr) {
-        [sizesList addObject:sizeStr];
-      }
-    }
-    [sizesList sortUsingSelector:@selector(localizedCaseInsensitiveCompare:)];
-    sizesString = [sizesList componentsJoinedByString:@","];
-  } else {
-    sizesString = size;
-  }
-  
-  // Check all cached ads to see if any match this configuration
-  for (NSString *requestId in self.cachedAdInfo) {
-    NSDictionary *adInfo = self.cachedAdInfo[requestId];
-    if ([adInfo[@"unitId"] isEqualToString:unitId] &&
-        [adInfo[@"isGAM"] boolValue] == isGAM &&
-        [adInfo[@"sizesString"] isEqualToString:sizesString]) {
-      return requestId;
-    }
-  }
-  
-  return nil;
-}
 
 - (NSString *)generateRequestId {
   return [[NSUUID UUID] UUIDString];
@@ -261,8 +201,6 @@ RCT_EXPORT_METHOD(clearAllCachedAds:(RCTPromiseResolveBlock)resolve
 @property(nonatomic, copy) RCTPromiseResolveBlock resolver;
 @property(nonatomic, copy) RCTPromiseRejectBlock rejecter;
 @property(nonatomic, weak) RNGoogleMobileAdsCachedBannerModule *module;
-@property(nonatomic, assign) BOOL isGAM;
-@property(nonatomic, strong) NSString *sizesString;
 @end
 
 @implementation RNGoogleMobileAdsCachedBannerDelegate
@@ -270,27 +208,27 @@ RCT_EXPORT_METHOD(clearAllCachedAds:(RCTPromiseResolveBlock)resolve
 - (instancetype)initWithRequestId:(NSString *)requestId
                          resolver:(RCTPromiseResolveBlock)resolver
                          rejecter:(RCTPromiseRejectBlock)rejecter
-                           module:(RNGoogleMobileAdsCachedBannerModule *)module
-                            isGAM:(BOOL)isGAM
-                      sizesString:(NSString *)sizesString {
+                           module:(RNGoogleMobileAdsCachedBannerModule *)module {
   self = [super init];
   if (self) {
     _requestId = requestId;
     _resolver = resolver;
     _rejecter = rejecter;
     _module = module;
-    _isGAM = isGAM;
-    _sizesString = sizesString;
   }
   return self;
 }
 
 - (void)bannerViewDidReceiveAd:(GADBannerView *)bannerView {
   CGSize adSize = bannerView.bounds.size;
+  
+  // Determine if this is a GAM banner view
+  BOOL isGAM = [bannerView isKindOfClass:[GAMBannerView class]];
+  
   [self.module storeCachedAdInfo:self.requestId
                           unitId:bannerView.adUnitID
-                           isGAM:self.isGAM
-                     sizesString:self.sizesString
+                           isGAM:isGAM
+                     sizesString:@""
                         isLoaded:YES
                            width:@(adSize.width)
                           height:@(adSize.height)];
@@ -311,10 +249,13 @@ RCT_EXPORT_METHOD(clearAllCachedAds:(RCTPromiseResolveBlock)resolve
 }
 
 - (void)bannerView:(GADBannerView *)bannerView didFailToReceiveAdWithError:(NSError *)error {
+  // Determine if this is a GAM banner view
+  BOOL isGAM = [bannerView isKindOfClass:[GAMBannerView class]];
+  
   [self.module storeCachedAdInfo:self.requestId
                           unitId:bannerView.adUnitID
-                           isGAM:self.isGAM
-                     sizesString:self.sizesString
+                           isGAM:isGAM
+                     sizesString:@""
                         isLoaded:NO
                            width:@0
                           height:@0];

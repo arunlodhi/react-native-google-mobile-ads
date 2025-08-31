@@ -16,7 +16,7 @@ import { requestGAMBannerAd, BannerAdSize, TestIds } from 'react-native-google-m
 // Request a cached GAM banner ad
 const requestCachedAd = async () => {
   try {
-    const adInfo = await requestGAMBannerAd('my-unique-request-id', {
+    const adInfo = await requestGAMBannerAd({
       unitId: TestIds.GAM_BANNER,
       sizes: [BannerAdSize.BANNER],
       requestOptions: {
@@ -26,6 +26,7 @@ const requestCachedAd = async () => {
 
     console.log('Cached ad loaded:', adInfo);
     // adInfo contains: { requestId, unitId, isLoaded, width, height }
+    // The requestId is automatically generated and returned
   } catch (error) {
     console.error('Failed to load cached ad:', error);
   }
@@ -35,15 +36,37 @@ const requestCachedAd = async () => {
 ### 2. Display the Cached Ad
 
 ```javascript
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View } from 'react-native';
-import { CachedGAMBannerAd } from 'react-native-google-mobile-ads';
+import { CachedGAMBannerAd, requestGAMBannerAd } from 'react-native-google-mobile-ads';
 
 const MyComponent = () => {
+  const [requestId, setRequestId] = useState(null);
+
+  useEffect(() => {
+    const loadAd = async () => {
+      try {
+        const adInfo = await requestGAMBannerAd({
+          unitId: TestIds.GAM_BANNER,
+          sizes: [BannerAdSize.BANNER],
+        });
+        setRequestId(adInfo.requestId);
+      } catch (error) {
+        console.error('Failed to load ad:', error);
+      }
+    };
+
+    loadAd();
+  }, []);
+
+  if (!requestId) {
+    return <View>Loading ad...</View>;
+  }
+
   return (
     <View>
       <CachedGAMBannerAd
-        requestId="my-unique-request-id"
+        requestId={requestId}
         onAdLoaded={dimensions => {
           console.log('Ad displayed with dimensions:', dimensions);
         }}
@@ -78,21 +101,27 @@ import {
 // Request multiple ads
 const requestMultipleAds = async () => {
   const adRequests = [
-    { requestId: 'home-banner', unitId: 'ca-app-pub-xxx/home' },
-    { requestId: 'profile-banner', unitId: 'ca-app-pub-xxx/profile' },
-    { requestId: 'settings-banner', unitId: 'ca-app-pub-xxx/settings' },
+    { name: 'home-banner', unitId: 'ca-app-pub-xxx/home' },
+    { name: 'profile-banner', unitId: 'ca-app-pub-xxx/profile' },
+    { name: 'settings-banner', unitId: 'ca-app-pub-xxx/settings' },
   ];
 
-  for (const { requestId, unitId } of adRequests) {
+  const adInfos = {};
+
+  for (const { name, unitId } of adRequests) {
     try {
-      await requestGAMBannerAd(requestId, {
+      const adInfo = await requestGAMBannerAd({
         unitId,
         sizes: [BannerAdSize.BANNER],
       });
+      adInfos[name] = adInfo; // Store the returned adInfo with generated requestId
+      console.log(`Loaded ad ${name} with requestId: ${adInfo.requestId}`);
     } catch (error) {
-      console.error(`Failed to load ad ${requestId}:`, error);
+      console.error(`Failed to load ad ${name}:`, error);
     }
   }
+
+  return adInfos;
 };
 
 // Check cached ad status
@@ -141,34 +170,46 @@ const clearAllAds = async () => {
 ```javascript
 import { requestBannerAd, CachedBannerAd, BannerAdSize } from 'react-native-google-mobile-ads';
 
-const requestRegularBannerAd = async () => {
-  try {
-    const adInfo = await requestBannerAd('regular-banner-id', {
-      unitId: 'ca-app-pub-xxx/banner',
-      size: BannerAdSize.BANNER,
-      requestOptions: {
-        requestNonPersonalizedAdsOnly: true,
-      },
-    });
+const RegularBannerComponent = () => {
+  const [requestId, setRequestId] = useState(null);
 
-    console.log('Regular banner ad loaded:', adInfo);
-  } catch (error) {
-    console.error('Failed to load regular banner ad:', error);
+  useEffect(() => {
+    const loadAd = async () => {
+      try {
+        const adInfo = await requestBannerAd({
+          unitId: 'ca-app-pub-xxx/banner',
+          size: BannerAdSize.BANNER,
+          requestOptions: {
+            requestNonPersonalizedAdsOnly: true,
+          },
+        });
+
+        console.log('Regular banner ad loaded:', adInfo);
+        setRequestId(adInfo.requestId);
+      } catch (error) {
+        console.error('Failed to load regular banner ad:', error);
+      }
+    };
+
+    loadAd();
+  }, []);
+
+  if (!requestId) {
+    return <View>Loading ad...</View>;
   }
-};
 
-// Display the cached regular banner ad
-const RegularBannerComponent = () => (
-  <CachedBannerAd
-    requestId="regular-banner-id"
-    onAdLoaded={dimensions => {
-      console.log('Regular banner ad displayed:', dimensions);
-    }}
-    onAdFailedToLoad={error => {
-      console.error('Regular banner ad failed:', error);
-    }}
-  />
-);
+  return (
+    <CachedBannerAd
+      requestId={requestId}
+      onAdLoaded={dimensions => {
+        console.log('Regular banner ad displayed:', dimensions);
+      }}
+      onAdFailedToLoad={error => {
+        console.error('Regular banner ad failed:', error);
+      }}
+    />
+  );
+};
 ```
 
 ## Best Practices
@@ -180,10 +221,13 @@ const RegularBannerComponent = () => (
 useEffect(() => {
   const preloadAds = async () => {
     // Pre-load ads for screens user is likely to visit
-    await requestGAMBannerAd('home-banner', {
+    const adInfo = await requestGAMBannerAd({
       unitId: TestIds.GAM_BANNER,
       sizes: [BannerAdSize.BANNER],
     });
+
+    // Store the requestId for later use
+    console.log('Pre-loaded ad with requestId:', adInfo.requestId);
   };
 
   preloadAds();
@@ -194,14 +238,17 @@ useEffect(() => {
 
 ```javascript
 const AdManager = () => {
+  const [requestId, setRequestId] = useState(null);
+
   useEffect(() => {
     // Load ads on mount
     const loadAds = async () => {
       try {
-        await requestGAMBannerAd('screen-banner', {
+        const adInfo = await requestGAMBannerAd({
           unitId: TestIds.GAM_BANNER,
           sizes: [BannerAdSize.BANNER],
         });
+        setRequestId(adInfo.requestId);
       } catch (error) {
         console.error('Failed to load ad:', error);
       }
@@ -211,13 +258,19 @@ const AdManager = () => {
 
     // Cleanup on unmount
     return () => {
-      removeCachedAd('screen-banner').catch(console.error);
+      if (requestId) {
+        removeCachedAd(requestId).catch(console.error);
+      }
     };
-  }, []);
+  }, [requestId]);
+
+  if (!requestId) {
+    return <View>Loading ad...</View>;
+  }
 
   return (
     <CachedGAMBannerAd
-      requestId="screen-banner"
+      requestId={requestId}
       onAdLoaded={() => console.log('Ad loaded')}
       onAdFailedToLoad={error => console.error('Ad failed:', error)}
     />
@@ -265,12 +318,26 @@ const RobustAdComponent = ({ requestId }) => {
 
 ### Functions
 
-- `requestBannerAd(requestId, options)` - Request a cached regular banner ad
-- `requestGAMBannerAd(requestId, options)` - Request a cached GAM banner ad
+- `requestBannerAd(options)` - Request a cached regular banner ad. Returns a Promise that resolves to `{ requestId, unitId, isLoaded, width, height }`
+- `requestGAMBannerAd(options)` - Request a cached GAM banner ad. Returns a Promise that resolves to `{ requestId, unitId, isLoaded, width, height }`
 - `getCachedAdInfo(requestId)` - Get information about a cached ad
 - `removeCachedAd(requestId)` - Remove a specific cached ad
 - `getAllCachedAdIds()` - Get all cached ad request IDs
 - `clearAllCachedAds()` - Remove all cached ads
+
+#### Function Parameters
+
+**requestBannerAd(options)**
+
+- `options.unitId` (string) - The ad unit ID
+- `options.size` (BannerAdSize) - The banner ad size
+- `options.requestOptions` (object, optional) - Ad request options
+
+**requestGAMBannerAd(options)**
+
+- `options.unitId` (string) - The ad unit ID
+- `options.sizes` (BannerAdSize[]) - Array of valid ad sizes
+- `options.requestOptions` (object, optional) - Ad request options
 
 ### Components
 
@@ -278,3 +345,9 @@ const RobustAdComponent = ({ requestId }) => {
 - `<CachedGAMBannerAd requestId="..." />` - Display a cached GAM banner ad
 
 All components support the same event handlers as regular banner ads (`onAdLoaded`, `onAdFailedToLoad`, `onAdClicked`, `onPaid`, etc.). GAM banner ads additionally support `onAppEvent` for Ad Manager specific app events.
+
+### Key Changes from Previous API
+
+- **Automatic requestId generation**: The `requestId` is now automatically generated by the native side and returned in the response
+- **Fresh ads for each request**: Each function call creates a new ad with a unique requestId
+- **Simplified caching**: Caching is only used to link requestIds to ad views for component reuse

@@ -48,23 +48,8 @@ class ReactNativeGoogleMobileAdsCachedBannerModule(reactContext: ReactApplicatio
             return
         }
 
-        // Check if an ad with the same configuration already exists
-        val existingRequestId = findExistingAdForConfig(config)
-        if (existingRequestId != null) {
-            val existingInfo = cachedAdInfo[existingRequestId]!!
-            val adInfo = Arguments.createMap().apply {
-                putString("requestId", existingInfo["requestId"] as String)
-                putString("unitId", existingInfo["unitId"] as String)
-                putBoolean("isLoaded", existingInfo["isLoaded"] as Boolean)
-                putDouble("width", existingInfo["width"] as Double)
-                putDouble("height", existingInfo["height"] as Double)
-            }
-            promise.resolve(adInfo)
-            return
-        }
-
-        // Generate new requestId for this ad configuration
-        val requestId = generateRequestId(config)
+        // Always generate a new requestId for each request
+        val requestId = generateRequestId()
 
         val currentActivity = currentActivity
         if (currentActivity == null) {
@@ -287,42 +272,7 @@ class ReactNativeGoogleMobileAdsCachedBannerModule(reactContext: ReactApplicatio
         return originalAdView
     }
 
-    fun getRequestIdForConfig(config: ReadableMap): String? {
-        return generateRequestId(config)
-    }
-
-    private fun findExistingAdForConfig(config: ReadableMap): String? {
-        val unitId = config.getString("unitId") ?: return null
-        val isGAM = config.getBoolean("isGAM")
-        val size = config.getString("size") ?: ""
-        
-        // For GAM ads, get sizes array
-        val sizesString = if (isGAM && config.hasKey("sizes")) {
-            val sizes = config.getArray("sizes")
-            val sizesList = mutableListOf<String>()
-            if (sizes != null) {
-                for (i in 0 until sizes.size()) {
-                    sizes.getString(i)?.let { sizesList.add(it) }
-                }
-            }
-            sizesList.sorted().joinToString(",")
-        } else {
-            size
-        }
-
-        // Check all cached ads to see if any match this configuration
-        for ((requestId, adInfo) in cachedAdInfo) {
-            if (adInfo["unitId"] == unitId && 
-                adInfo["isGAM"] == isGAM &&
-                adInfo["sizesString"] == sizesString) {
-                return requestId
-            }
-        }
-        
-        return null
-    }
-
-    private fun generateRequestId(config: ReadableMap): String {
+    private fun generateRequestId(): String {
         // Generate a unique UUID for each ad request
         return UUID.randomUUID().toString()
     }
