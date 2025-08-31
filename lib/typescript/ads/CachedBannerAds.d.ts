@@ -24,18 +24,16 @@ export interface CachedAdInfo {
 }
 /**
  * Request a cached banner ad that can be reused across re-renders
- * @param requestId Unique identifier for this cached ad
  * @param options Banner ad configuration options
  * @returns Promise that resolves when ad is loaded or rejects on failure
  */
-export declare function requestBannerAd(requestId: string, options: CachedBannerAdOptions): Promise<CachedAdInfo>;
+export declare function requestBannerAd(options: CachedBannerAdOptions): Promise<CachedAdInfo>;
 /**
  * Request a cached GAM banner ad that can be reused across re-renders
- * @param requestId Unique identifier for this cached ad
  * @param options GAM banner ad configuration options
  * @returns Promise that resolves when ad is loaded or rejects on failure
  */
-export declare function requestGAMBannerAd(requestId: string, options: CachedGAMBannerAdOptions): Promise<CachedAdInfo>;
+export declare function requestGAMBannerAd(options: CachedGAMBannerAdOptions): Promise<CachedAdInfo>;
 /**
  * Get information about a cached ad
  * @param requestId The request ID of the cached ad

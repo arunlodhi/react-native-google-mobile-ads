@@ -47,18 +47,10 @@ export interface CachedAdInfo {
 
 /**
  * Request a cached banner ad that can be reused across re-renders
- * @param requestId Unique identifier for this cached ad
  * @param options Banner ad configuration options
  * @returns Promise that resolves when ad is loaded or rejects on failure
  */
-export function requestBannerAd(
-  requestId: string,
-  options: CachedBannerAdOptions,
-): Promise<CachedAdInfo> {
-  if (!requestId || typeof requestId !== 'string') {
-    return Promise.reject(new Error('requestId must be a non-empty string'));
-  }
-
+export function requestBannerAd(options: CachedBannerAdOptions): Promise<CachedAdInfo> {
   if (!options.unitId) {
     return Promise.reject(new Error('unitId is required'));
   }
@@ -77,7 +69,6 @@ export function requestBannerAd(
   }
 
   const config = {
-    requestId,
     unitId: options.unitId,
     size: options.size,
     requestOptions: validatedRequestOptions,
@@ -91,18 +82,10 @@ export function requestBannerAd(
 
 /**
  * Request a cached GAM banner ad that can be reused across re-renders
- * @param requestId Unique identifier for this cached ad
  * @param options GAM banner ad configuration options
  * @returns Promise that resolves when ad is loaded or rejects on failure
  */
-export function requestGAMBannerAd(
-  requestId: string,
-  options: CachedGAMBannerAdOptions,
-): Promise<CachedAdInfo> {
-  if (!requestId || typeof requestId !== 'string') {
-    return Promise.reject(new Error('requestId must be a non-empty string'));
-  }
-
+export function requestGAMBannerAd(options: CachedGAMBannerAdOptions): Promise<CachedAdInfo> {
   if (!options.unitId) {
     return Promise.reject(new Error('unitId is required'));
   }
@@ -121,7 +104,6 @@ export function requestGAMBannerAd(
   }
 
   const config = {
-    requestId,
     unitId: options.unitId,
     sizes: options.sizes,
     requestOptions: validatedRequestOptions,
