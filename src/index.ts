@@ -60,6 +60,10 @@ export {
   removeCachedAd,
   getAllCachedAdIds,
   clearAllCachedAds,
+  createCachedAdListeners,
+  addCachedAdListeners,
+  removeCachedAdListeners,
+  AdListeners,
 } from './ads/CachedBannerAds';
 export { useAppOpenAd } from './hooks/useAppOpenAd';
 export { useInterstitialAd } from './hooks/useInterstitialAd';
