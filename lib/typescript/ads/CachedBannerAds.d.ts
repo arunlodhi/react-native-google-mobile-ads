@@ -12,6 +12,10 @@ export interface AdListeners {
     onAdClicked?: () => void;
     onPaidEvent?: (value: any) => void;
     onAppEvent?: (name: string, data: string) => void;
+    onSizeChange?: (dimensions: {
+        width: number;
+        height: number;
+    }) => void;
 }
 export interface CachedBannerAdOptions {
     unitId: string;

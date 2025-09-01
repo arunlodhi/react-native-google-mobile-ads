@@ -36,6 +36,7 @@ export interface AdListeners {
   onAdClicked?: () => void;
   onPaidEvent?: (value: any) => void;
   onAppEvent?: (name: string, data: string) => void;
+  onSizeChange?: (dimensions: { width: number; height: number }) => void;
 }
 
 export interface CachedBannerAdOptions {
@@ -331,6 +332,11 @@ function setupAdListeners(manager: CachedBannerAdListenerManager, adListeners: A
   if (adListeners.onAppEvent) {
     manager.addAdEventListener(GAMAdEventType.APP_EVENT, (appEvent: any) => {
       adListeners.onAppEvent!(appEvent.name, appEvent.data);
+    });
+  }
+  if (adListeners.onSizeChange) {
+    manager.addAdEventListener(AdEventType.SIZE_CHANGE, (sizeData: any) => {
+      adListeners.onSizeChange!({ width: sizeData.width, height: sizeData.height });
     });
   }
 }

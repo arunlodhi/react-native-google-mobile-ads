@@ -44,6 +44,10 @@ export declare enum AdEventType {
     /**
      * The user closed the ad and has returned back to your application.
      */
-    CLOSED = "closed"
+    CLOSED = "closed",
+    /**
+     * The ad size has changed. This event provides the new width and height.
+     */
+    SIZE_CHANGE = "size_change"
 }
 //# sourceMappingURL=AdEventType.d.ts.map
