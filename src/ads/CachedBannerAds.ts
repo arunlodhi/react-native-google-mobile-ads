@@ -15,7 +15,7 @@
  *
  */
 
-import { EmitterSubscription, PixelRatio } from 'react-native';
+import { EmitterSubscription } from 'react-native';
 import { BannerAdSize } from '../BannerAdSize';
 import { RequestOptions } from '../types/RequestOptions';
 import { validateAdRequestOptions } from '../validateAdRequestOptions';
@@ -336,10 +336,7 @@ function setupAdListeners(manager: CachedBannerAdListenerManager, adListeners: A
   }
   if (adListeners.onSizeChange) {
     manager.addAdEventListener(AdEventType.SIZE_CHANGE, (sizeData: any) => {
-      // Convert from device pixels to logical pixels, similar to BaseAd
-      const width = Math.ceil(sizeData.width / PixelRatio.get());
-      const height = Math.ceil(sizeData.height / PixelRatio.get());
-      adListeners.onSizeChange!({ width, height });
+      adListeners.onSizeChange!({ width: sizeData.width, height: sizeData.height });
     });
   }
 }
