@@ -120,16 +120,22 @@ class ReactNativeGoogleMobileAdsCachedBannerModule(reactContext: ReactApplicatio
                         val width: Int
                         val height: Int
                         
-                        // Use the exact same logic as ReactNativeGoogleMobileAdsBannerAdViewManager
-                        val isFluid = adSize == AdSize.FLUID
-                        if (isFluid) {
-                            // For fluid ads, use the view dimensions
+                        if (adSize != null) {
+                            // Use the exact same logic as ReactNativeGoogleMobileAdsBannerAdViewManager
+                            val isFluid = adSize == AdSize.FLUID
+                            if (isFluid) {
+                                // For fluid ads, use the view dimensions
+                                width = adView.width
+                                height = adView.height
+                            } else {
+                                // For all other ad sizes, use getWidthInPixels and getHeightInPixels
+                                width = adSize.getWidthInPixels(currentActivity)
+                                height = adSize.getHeightInPixels(currentActivity)
+                            }
+                        } else {
+                            // Fallback if adSize is null
                             width = adView.width
                             height = adView.height
-                        } else {
-                            // For all other ad sizes, use getWidthInPixels and getHeightInPixels
-                            width = adSize.getWidthInPixels(currentActivity)
-                            height = adSize.getHeightInPixels(currentActivity)
                         }
                         
                         // Convert pixels to DP using PixelUtil (exact same as regular banner implementation)
