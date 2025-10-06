@@ -224,20 +224,59 @@ RCT_EXPORT_METHOD(clearAllCachedAds:(RCTPromiseResolveBlock)resolve
   GADAdSize gadAdSize = bannerView.adSize;
   CGSize adSize = CGSizeFromGADAdSize(gadAdSize);
   
-  // For standard ad sizes, use the logical size directly to avoid conversion issues
-  // Only use bounds for adaptive/fluid ads
   BOOL isGAM = [bannerView isKindOfClass:[GAMBannerView class]];
-  BOOL isAdaptiveOrFluid = GADAdSizeEqualToSize(gadAdSize, GADAdSizeFluid) ||
-                          [NSStringFromGADAdSize(gadAdSize) containsString:@"Adaptive"];
   
-  if (isGAM && isAdaptiveOrFluid) {
-    // For GAM adaptive/fluid ads, the bounds might be more accurate after the ad loads
+  // Check if this is a special ad size that needs bounds-based calculation
+  NSString *adSizeString = NSStringFromGADAdSize(gadAdSize);
+  BOOL isSpecialAdSize = GADAdSizeEqualToSize(gadAdSize, GADAdSizeFluid) ||
+                        [adSizeString containsString:@"Adaptive"] ||
+                        [adSizeString containsString:@"Smart"] ||
+                        adSize.width <= 0 || adSize.height <= 0;
+  
+  if (isSpecialAdSize) {
+    // For special ad sizes (fluid, adaptive, smart, etc.), try to get dimensions from bounds
     CGSize boundsSize = bannerView.bounds.size;
     if (boundsSize.width > 0 && boundsSize.height > 0) {
       adSize = boundsSize;
+    } else {
+      // If bounds are not available yet, wait a bit and try again
+      dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.1 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        CGSize delayedBoundsSize = bannerView.bounds.size;
+        if (delayedBoundsSize.width > 0 && delayedBoundsSize.height > 0) {
+          // Update the cached info with the correct dimensions
+          [self.module storeCachedAdInfo:self.requestId
+                                  unitId:bannerView.adUnitID
+                                   isGAM:isGAM
+                             sizesString:@""
+                                isLoaded:YES
+                                   width:@(delayedBoundsSize.width)
+                                  height:@(delayedBoundsSize.height)];
+        }
+      });
     }
   }
-  // For standard sizes like MEDIUM_RECTANGLE (300x250), use the logical size from GADAdSize
+  
+  // For GAM ads, ensure we're getting the actual ad size that was served
+  if (isGAM) {
+    // GAM ads can return different sizes than requested
+    // Make sure we're reporting the actual ad size, not just the requested size
+    GADAdSize actualAdSize = bannerView.adSize;
+    if (!GADAdSizeEqualToSize(actualAdSize, GADAdSizeInvalid)) {
+      CGSize actualSize = CGSizeFromGADAdSize(actualAdSize);
+      if (actualSize.width > 0 && actualSize.height > 0) {
+        adSize = actualSize;
+      }
+    }
+  }
+  
+  // Ensure we have valid dimensions
+  if (adSize.width <= 0 || adSize.height <= 0) {
+    // Last resort: try to get dimensions from the view frame
+    CGSize frameSize = bannerView.frame.size;
+    if (frameSize.width > 0 && frameSize.height > 0) {
+      adSize = frameSize;
+    }
+  }
   
   [self.module storeCachedAdInfo:self.requestId
                           unitId:bannerView.adUnitID

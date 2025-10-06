@@ -121,41 +121,87 @@ class ReactNativeGoogleMobileAdsCachedBannerModule(reactContext: ReactApplicatio
                         var heightDp = 0.0
                         
                         if (adSize != null) {
-                            // For standard ad sizes, use the logical dp dimensions directly
-                            // This avoids issues with pixel conversion that can cause incorrect dimensions
-                            widthDp = adSize.width.toDouble()
-                            heightDp = adSize.height.toDouble()
+                            val density = currentActivity.resources.displayMetrics.density
                             
-                            // Only use pixel-based calculation for adaptive or fluid ads
-                            // Check if it's a fluid ad or an adaptive ad (adaptive ads have width -1 or -3)
-                            if (adSize == AdSize.FLUID || 
+                            // Check if it's a special ad size that requires pixel-based calculation
+                            val isSpecialAdSize = adSize == AdSize.FLUID || 
+                                adSize.width <= 0 || adSize.height <= 0 ||
                                 adSize.width == -1 || adSize.width == -3 ||
-                                adSize.height == -1 || adSize.height == -2) {
-                                
-                                // Get density for converting pixels to dp
-                                val density = currentActivity.resources.displayMetrics.density
-                                
-                                // Get width and height in pixels from AdSize
-                                val widthPx = adSize.getWidthInPixels(currentActivity)
-                                val heightPx = adSize.getHeightInPixels(currentActivity)
-                                
-                                // Convert pixels to density-independent pixels (dp)
-                                widthDp = (widthPx / density).toDouble()
-                                heightDp = (heightPx / density).toDouble()
+                                adSize.height == -1 || adSize.height == -2
+                            
+                            if (isSpecialAdSize) {
+                                // For fluid, adaptive, or other special ad sizes, use pixel-based calculation
+                                try {
+                                    val widthPx = adSize.getWidthInPixels(currentActivity)
+                                    val heightPx = adSize.getHeightInPixels(currentActivity)
+                                    
+                                    if (widthPx > 0 && heightPx > 0) {
+                                        // Convert pixels to density-independent pixels (dp)
+                                        widthDp = (widthPx / density).toDouble()
+                                        heightDp = (heightPx / density).toDouble()
+                                    }
+                                } catch (e: Exception) {
+                                    // If pixel calculation fails, fall back to view dimensions
+                                    android.util.Log.w("CachedBannerModule", "Failed to get pixel dimensions: ${e.message}")
+                                }
+                            } else {
+                                // For standard ad sizes, use the logical dp dimensions directly
+                                widthDp = adSize.width.toDouble()
+                                heightDp = adSize.height.toDouble()
                             }
                             
-                            // For GAM ads, also check the actual view dimensions after layout
-                            // but only if we don't already have reasonable dimensions
-                            if (isGAM && adView.width > 0 && adView.height > 0 && (widthDp <= 0 || heightDp <= 0)) {
-                                val density = currentActivity.resources.displayMetrics.density
-                                // Convert actual view dimensions from pixels to dp
-                                val viewWidthDp = (adView.width / density).toDouble()
-                                val viewHeightDp = (adView.height / density).toDouble()
-                                
-                                // Use view dimensions if they seem reasonable (not zero)
-                                if (viewWidthDp > 0 && viewHeightDp > 0) {
-                                    widthDp = viewWidthDp
-                                    heightDp = viewHeightDp
+                            // If we still don't have valid dimensions, try to get them from the view
+                            if (widthDp <= 0 || heightDp <= 0) {
+                                // Wait a bit for the view to be laid out, then try to get dimensions
+                                adView.post {
+                                    if (adView.width > 0 && adView.height > 0) {
+                                        val viewWidthDp = (adView.width / density).toDouble()
+                                        val viewHeightDp = (adView.height / density).toDouble()
+                                        
+                                        if (viewWidthDp > 0 && viewHeightDp > 0) {
+                                            widthDp = viewWidthDp
+                                            heightDp = viewHeightDp
+                                            
+                                            // Update cached info with correct dimensions
+                                            val updatedAdInfoData = mapOf(
+                                                "requestId" to requestId,
+                                                "unitId" to unitId,
+                                                "isGAM" to isGAM,
+                                                "sizesString" to sizesString,
+                                                "isLoaded" to true,
+                                                "width" to widthDp,
+                                                "height" to heightDp
+                                            )
+                                            cachedAdInfo[requestId] = updatedAdInfoData
+                                        }
+                                    }
+                                }
+                            }
+                            
+                            // For GAM ads, ensure we have the correct aspect ratio
+                            if (isGAM && widthDp > 0 && heightDp > 0) {
+                                // GAM ads can return different sizes than requested
+                                // Make sure we're reporting the actual ad size, not the requested size
+                                val actualAdSize = adView.adSize
+                                if (actualAdSize != null && actualAdSize != adSize) {
+                                    // The ad size changed, recalculate dimensions
+                                    if (actualAdSize.width > 0 && actualAdSize.height > 0) {
+                                        widthDp = actualAdSize.width.toDouble()
+                                        heightDp = actualAdSize.height.toDouble()
+                                    } else {
+                                        // Use pixel-based calculation for the actual ad size
+                                        try {
+                                            val actualWidthPx = actualAdSize.getWidthInPixels(currentActivity)
+                                            val actualHeightPx = actualAdSize.getHeightInPixels(currentActivity)
+                                            
+                                            if (actualWidthPx > 0 && actualHeightPx > 0) {
+                                                widthDp = (actualWidthPx / density).toDouble()
+                                                heightDp = (actualHeightPx / density).toDouble()
+                                            }
+                                        } catch (e: Exception) {
+                                            android.util.Log.w("CachedBannerModule", "Failed to get actual ad size dimensions: ${e.message}")
+                                        }
+                                    }
                                 }
                             }
                         }
