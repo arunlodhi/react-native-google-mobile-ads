@@ -51,7 +51,7 @@ class ReactNativeGoogleMobileAdsCachedBannerModule(reactContext: ReactApplicatio
         // Always generate a new requestId for each request
         val requestId = generateRequestId()
 
-        val currentActivity = currentActivity
+        val currentActivity = getCurrentActivity()
         if (currentActivity == null) {
             promise.reject("no_activity", "No current activity available")
             return

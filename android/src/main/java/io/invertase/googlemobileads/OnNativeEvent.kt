@@ -3,7 +3,7 @@ package io.invertase.googlemobileads
 import com.facebook.react.bridge.WritableMap
 import com.facebook.react.uimanager.events.Event
 
-class OnNativeEvent(viewId: Int, private val event: WritableMap) : Event<OnNativeEvent>(viewId) {
+class OnNativeEvent(surfaceId: Int, viewId: Int, private val event: WritableMap) : Event<OnNativeEvent>(surfaceId, viewId) {
 
     override fun getEventName(): String {
         return EVENT_NAME
