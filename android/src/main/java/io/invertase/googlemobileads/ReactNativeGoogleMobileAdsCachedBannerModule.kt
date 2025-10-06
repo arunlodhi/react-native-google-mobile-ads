@@ -127,9 +127,10 @@ class ReactNativeGoogleMobileAdsCachedBannerModule(reactContext: ReactApplicatio
                             heightDp = adSize.height.toDouble()
                             
                             // Only use pixel-based calculation for adaptive or fluid ads
+                            // Check if it's a fluid ad or an adaptive ad (adaptive ads have width -1 or -3)
                             if (adSize == AdSize.FLUID || 
-                                adSize.width == AdSize.AUTO_WIDTH || 
-                                adSize.height == AdSize.AUTO_HEIGHT) {
+                                adSize.width == -1 || adSize.width == -3 ||
+                                adSize.height == -1 || adSize.height == -2) {
                                 
                                 // Get density for converting pixels to dp
                                 val density = currentActivity.resources.displayMetrics.density
