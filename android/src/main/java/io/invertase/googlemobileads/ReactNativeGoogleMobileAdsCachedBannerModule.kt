@@ -69,24 +69,45 @@ class ReactNativeGoogleMobileAdsCachedBannerModule(reactContext: ReactApplicatio
                 adView.adUnitId = unitId
 
                 // Set ad sizes
+                android.util.Log.d("CachedBannerModule", "=== SIZE CONFIGURATION DEBUG ===")
+                android.util.Log.d("CachedBannerModule", "IsGAM: $isGAM")
+                android.util.Log.d("CachedBannerModule", "Config has 'sizes' key: ${config.hasKey("sizes")}")
+                android.util.Log.d("CachedBannerModule", "Config has 'size' key: ${config.hasKey("size")}")
+                
                 if (isGAM && config.hasKey("sizes")) {
                     val sizes = config.getArray("sizes")
+                    android.util.Log.d("CachedBannerModule", "Sizes array: $sizes")
+                    android.util.Log.d("CachedBannerModule", "Sizes array size: ${sizes?.size()}")
+                    
                     if (sizes != null && sizes.size() > 0) {
                         val adSizes = mutableListOf<AdSize>()
                         for (i in 0 until sizes.size()) {
                             val sizeString = sizes.getString(i)
+                            android.util.Log.d("CachedBannerModule", "Processing size[$i]: '$sizeString'")
+                            
                             if (sizeString != null) {
                                 val adSize = ReactNativeGoogleMobileAdsCommon.getAdSize(sizeString, adView)
+                                android.util.Log.d("CachedBannerModule", "  -> Parsed to AdSize: $adSize")
+                                android.util.Log.d("CachedBannerModule", "  -> AdSize.width: ${adSize.width}")
+                                android.util.Log.d("CachedBannerModule", "  -> AdSize.height: ${adSize.height}")
                                 adSizes.add(adSize)
                             }
                         }
+                        android.util.Log.d("CachedBannerModule", "Final adSizes list: $adSizes")
                         (adView as AdManagerAdView).setAdSizes(*adSizes.toTypedArray())
+                        android.util.Log.d("CachedBannerModule", "Set adSizes on AdManagerAdView")
                     }
                 } else if (config.hasKey("size")) {
                     val sizeString = config.getString("size")
+                    android.util.Log.d("CachedBannerModule", "Single size string: '$sizeString'")
+                    
                     if (sizeString != null) {
                         val adSize = ReactNativeGoogleMobileAdsCommon.getAdSize(sizeString, adView)
+                        android.util.Log.d("CachedBannerModule", "  -> Parsed to AdSize: $adSize")
+                        android.util.Log.d("CachedBannerModule", "  -> AdSize.width: ${adSize.width}")
+                        android.util.Log.d("CachedBannerModule", "  -> AdSize.height: ${adSize.height}")
                         (adView as AdView).setAdSize(adSize)
+                        android.util.Log.d("CachedBannerModule", "Set adSize on AdView")
                     }
                 }
 
@@ -116,31 +137,65 @@ class ReactNativeGoogleMobileAdsCachedBannerModule(reactContext: ReactApplicatio
                 // Set up ad listener
                 adView.adListener = object : AdListener() {
                     override fun onAdLoaded() {
+                        android.util.Log.d("CachedBannerModule", "=== AD LOADED - SIZE CALCULATION DEBUG ===")
+                        android.util.Log.d("CachedBannerModule", "RequestId: $requestId")
+                        android.util.Log.d("CachedBannerModule", "UnitId: $unitId")
+                        android.util.Log.d("CachedBannerModule", "IsGAM: $isGAM")
+                        android.util.Log.d("CachedBannerModule", "SizesString: $sizesString")
+                        
                         val adSize = adView.adSize
+                        android.util.Log.d("CachedBannerModule", "AdView.adSize: $adSize")
+                        android.util.Log.d("CachedBannerModule", "AdView.width: ${adView.width}")
+                        android.util.Log.d("CachedBannerModule", "AdView.height: ${adView.height}")
+                        
                         val width: Int
                         val height: Int
                         
                         if (adSize != null) {
+                            android.util.Log.d("CachedBannerModule", "AdSize details:")
+                            android.util.Log.d("CachedBannerModule", "  - AdSize.toString(): $adSize")
+                            android.util.Log.d("CachedBannerModule", "  - AdSize.width: ${adSize.width}")
+                            android.util.Log.d("CachedBannerModule", "  - AdSize.height: ${adSize.height}")
+                            
                             // Use the exact same logic as ReactNativeGoogleMobileAdsBannerAdViewManager
                             val isFluid = adSize == AdSize.FLUID
+                            android.util.Log.d("CachedBannerModule", "  - IsFluid: $isFluid")
+                            
                             if (isFluid) {
                                 // For fluid ads, use the view dimensions
                                 width = adView.width
                                 height = adView.height
+                                android.util.Log.d("CachedBannerModule", "Using FLUID logic - view dimensions:")
+                                android.util.Log.d("CachedBannerModule", "  - width (from adView.width): $width")
+                                android.util.Log.d("CachedBannerModule", "  - height (from adView.height): $height")
                             } else {
                                 // For all other ad sizes, use getWidthInPixels and getHeightInPixels
                                 width = adSize.getWidthInPixels(currentActivity)
                                 height = adSize.getHeightInPixels(currentActivity)
+                                android.util.Log.d("CachedBannerModule", "Using NON-FLUID logic - adSize pixels:")
+                                android.util.Log.d("CachedBannerModule", "  - width (from getWidthInPixels): $width")
+                                android.util.Log.d("CachedBannerModule", "  - height (from getHeightInPixels): $height")
                             }
                         } else {
                             // Fallback if adSize is null
                             width = adView.width
                             height = adView.height
+                            android.util.Log.d("CachedBannerModule", "AdSize is NULL - using fallback view dimensions:")
+                            android.util.Log.d("CachedBannerModule", "  - width (from adView.width): $width")
+                            android.util.Log.d("CachedBannerModule", "  - height (from adView.height): $height")
                         }
+                        
+                        android.util.Log.d("CachedBannerModule", "Final pixel dimensions:")
+                        android.util.Log.d("CachedBannerModule", "  - width (pixels): $width")
+                        android.util.Log.d("CachedBannerModule", "  - height (pixels): $height")
                         
                         // Convert pixels to DP using PixelUtil (exact same as regular banner implementation)
                         val widthDp = com.facebook.react.uimanager.PixelUtil.toDIPFromPixel(width.toFloat()).toDouble()
                         val heightDp = com.facebook.react.uimanager.PixelUtil.toDIPFromPixel(height.toFloat()).toDouble()
+                        
+                        android.util.Log.d("CachedBannerModule", "Converted to DP:")
+                        android.util.Log.d("CachedBannerModule", "  - widthDp: $widthDp")
+                        android.util.Log.d("CachedBannerModule", "  - heightDp: $heightDp")
                         
                         val adInfoData = mapOf(
                             "requestId" to requestId,

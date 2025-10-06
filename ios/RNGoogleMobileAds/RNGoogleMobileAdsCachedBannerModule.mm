@@ -220,11 +220,24 @@ RCT_EXPORT_METHOD(clearAllCachedAds:(RCTPromiseResolveBlock)resolve
 }
 
 - (void)bannerViewDidReceiveAd:(GADBannerView *)bannerView {
+  NSLog(@"CachedBannerModule: === AD LOADED - SIZE CALCULATION DEBUG (iOS) ===");
+  NSLog(@"CachedBannerModule: RequestId: %@", self.requestId);
+  NSLog(@"CachedBannerModule: UnitId: %@", bannerView.adUnitID);
+  
   BOOL isGAM = [bannerView isKindOfClass:[GAMBannerView class]];
+  NSLog(@"CachedBannerModule: IsGAM: %@", isGAM ? @"YES" : @"NO");
+  
+  // Log banner view details
+  NSLog(@"CachedBannerModule: BannerView.bounds: %@", NSStringFromCGRect(bannerView.bounds));
+  NSLog(@"CachedBannerModule: BannerView.frame: %@", NSStringFromCGRect(bannerView.frame));
+  NSLog(@"CachedBannerModule: BannerView.adSize: %@", NSStringFromGADAdSize(bannerView.adSize));
   
   // Use the exact same approach as RNGoogleMobileAdsBannerComponent
   // This ensures React Native compatible sizes and consistent behavior
   CGSize adSize = bannerView.bounds.size;
+  NSLog(@"CachedBannerModule: Using bounds.size for dimensions:");
+  NSLog(@"CachedBannerModule: - width (from bounds): %.2f", adSize.width);
+  NSLog(@"CachedBannerModule: - height (from bounds): %.2f", adSize.height);
   
   [self.module storeCachedAdInfo:self.requestId
                           unitId:bannerView.adUnitID
@@ -241,6 +254,8 @@ RCT_EXPORT_METHOD(clearAllCachedAds:(RCTPromiseResolveBlock)resolve
     @"width": @(adSize.width),
     @"height": @(adSize.height)
   };
+  
+  NSLog(@"CachedBannerModule: Final adInfo: %@", adInfo);
   
   if (self.resolver) {
     self.resolver(adInfo);
