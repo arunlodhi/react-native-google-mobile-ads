@@ -117,95 +117,25 @@ class ReactNativeGoogleMobileAdsCachedBannerModule(reactContext: ReactApplicatio
                 adView.adListener = object : AdListener() {
                     override fun onAdLoaded() {
                         val adSize = adView.adSize
-                        var widthDp = 0.0
-                        var heightDp = 0.0
+                        val width: Int
+                        val height: Int
                         
-                        if (adSize != null) {
-                            val density = currentActivity.resources.displayMetrics.density
-                            
-                            // Check if it's a special ad size that requires pixel-based calculation
-                            val isSpecialAdSize = adSize == AdSize.FLUID || 
-                                adSize.width <= 0 || adSize.height <= 0 ||
-                                adSize.width == -1 || adSize.width == -3 ||
-                                adSize.height == -1 || adSize.height == -2
-                            
-                            if (isSpecialAdSize) {
-                                // For fluid, adaptive, or other special ad sizes, use pixel-based calculation
-                                try {
-                                    val widthPx = adSize.getWidthInPixels(currentActivity)
-                                    val heightPx = adSize.getHeightInPixels(currentActivity)
-                                    
-                                    if (widthPx > 0 && heightPx > 0) {
-                                        // Convert pixels to density-independent pixels (dp)
-                                        widthDp = (widthPx / density).toDouble()
-                                        heightDp = (heightPx / density).toDouble()
-                                    }
-                                } catch (e: Exception) {
-                                    // If pixel calculation fails, fall back to view dimensions
-                                    android.util.Log.w("CachedBannerModule", "Failed to get pixel dimensions: ${e.message}")
-                                }
-                            } else {
-                                // For standard ad sizes, use the logical dp dimensions directly
-                                widthDp = adSize.width.toDouble()
-                                heightDp = adSize.height.toDouble()
-                            }
-                            
-                            // If we still don't have valid dimensions, try to get them from the view
-                            if (widthDp <= 0 || heightDp <= 0) {
-                                // Wait a bit for the view to be laid out, then try to get dimensions
-                                adView.post {
-                                    if (adView.width > 0 && adView.height > 0) {
-                                        val viewWidthDp = (adView.width / density).toDouble()
-                                        val viewHeightDp = (adView.height / density).toDouble()
-                                        
-                                        if (viewWidthDp > 0 && viewHeightDp > 0) {
-                                            widthDp = viewWidthDp
-                                            heightDp = viewHeightDp
-                                            
-                                            // Update cached info with correct dimensions
-                                            val updatedAdInfoData = mapOf(
-                                                "requestId" to requestId,
-                                                "unitId" to unitId,
-                                                "isGAM" to isGAM,
-                                                "sizesString" to sizesString,
-                                                "isLoaded" to true,
-                                                "width" to widthDp,
-                                                "height" to heightDp
-                                            )
-                                            cachedAdInfo[requestId] = updatedAdInfoData
-                                        }
-                                    }
-                                }
-                            }
-                            
-                            // For GAM ads, ensure we have the correct aspect ratio
-                            if (isGAM && widthDp > 0 && heightDp > 0) {
-                                // GAM ads can return different sizes than requested
-                                // Make sure we're reporting the actual ad size, not the requested size
-                                val actualAdSize = adView.adSize
-                                if (actualAdSize != null && actualAdSize != adSize) {
-                                    // The ad size changed, recalculate dimensions
-                                    if (actualAdSize.width > 0 && actualAdSize.height > 0) {
-                                        widthDp = actualAdSize.width.toDouble()
-                                        heightDp = actualAdSize.height.toDouble()
-                                    } else {
-                                        // Use pixel-based calculation for the actual ad size
-                                        try {
-                                            val actualWidthPx = actualAdSize.getWidthInPixels(currentActivity)
-                                            val actualHeightPx = actualAdSize.getHeightInPixels(currentActivity)
-                                            
-                                            if (actualWidthPx > 0 && actualHeightPx > 0) {
-                                                widthDp = (actualWidthPx / density).toDouble()
-                                                heightDp = (actualHeightPx / density).toDouble()
-                                            }
-                                        } catch (e: Exception) {
-                                            android.util.Log.w("CachedBannerModule", "Failed to get actual ad size dimensions: ${e.message}")
-                                        }
-                                    }
-                                }
-                            }
+                        // Use the exact same logic as ReactNativeGoogleMobileAdsBannerAdViewManager
+                        val isFluid = adSize == AdSize.FLUID
+                        if (isFluid) {
+                            // For fluid ads, use the view dimensions
+                            width = adView.width
+                            height = adView.height
+                        } else {
+                            // For all other ad sizes, use getWidthInPixels and getHeightInPixels
+                            width = adSize.getWidthInPixels(currentActivity)
+                            height = adSize.getHeightInPixels(currentActivity)
                         }
-
+                        
+                        // Convert pixels to DP using PixelUtil (exact same as regular banner implementation)
+                        val widthDp = com.facebook.react.uimanager.PixelUtil.toDIPFromPixel(width.toFloat()).toDouble()
+                        val heightDp = com.facebook.react.uimanager.PixelUtil.toDIPFromPixel(height.toFloat()).toDouble()
+                        
                         val adInfoData = mapOf(
                             "requestId" to requestId,
                             "unitId" to unitId,
