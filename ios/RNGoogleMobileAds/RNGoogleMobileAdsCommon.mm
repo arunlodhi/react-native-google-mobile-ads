@@ -217,6 +217,10 @@ NSString *const GOOGLE_MOBILE_ADS_EVENT_REWARDED_EARNED_REWARD = @"rewarded_earn
   }
 }
 
++ (GADAdSize)getAdSizeFromString:(NSString *)sizeString {
+  return [self stringToAdSize:sizeString withMaxHeight:-1 andWidth:0];
+}
+
 + (BOOL)isAdManagerUnit:(NSString *)unitId {
   if (unitId == nil) {
     return NO;

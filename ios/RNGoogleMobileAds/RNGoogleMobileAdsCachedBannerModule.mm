@@ -95,7 +95,7 @@ RCT_EXPORT_METHOD(requestCachedBannerAd:(NSDictionary *)config
     if (sizes && sizes.count > 0) {
       NSMutableArray<NSValue *> *adSizes = [[NSMutableArray alloc] init];
       for (NSString *sizeString in sizes) {
-        GADAdSize adSize = [RNGoogleMobileAdsCommon getAdSizeFromString:sizeString];
+        GADAdSize adSize = [RNGoogleMobileAdsCommon stringToAdSize:sizeString withMaxHeight:-1 andWidth:0];
         [adSizes addObject:NSValueFromGADAdSize(adSize)];
       }
       ((GAMBannerView *)bannerView).validAdSizes = adSizes;
@@ -103,7 +103,7 @@ RCT_EXPORT_METHOD(requestCachedBannerAd:(NSDictionary *)config
   } else {
     NSString *sizeString = config[@"size"];
     if (sizeString) {
-      GADAdSize adSize = [RNGoogleMobileAdsCommon getAdSizeFromString:sizeString];
+      GADAdSize adSize = [RNGoogleMobileAdsCommon stringToAdSize:sizeString withMaxHeight:-1 andWidth:0];
       bannerView.adSize = adSize;
     }
   }
@@ -220,10 +220,24 @@ RCT_EXPORT_METHOD(clearAllCachedAds:(RCTPromiseResolveBlock)resolve
 }
 
 - (void)bannerViewDidReceiveAd:(GADBannerView *)bannerView {
-  CGSize adSize = bannerView.bounds.size;
+  // Get the actual ad size from the banner view's adSize property
+  GADAdSize gadAdSize = bannerView.adSize;
+  CGSize adSize = CGSizeFromGADAdSize(gadAdSize);
   
-  // Determine if this is a GAM banner view
+  // For standard ad sizes, use the logical size directly to avoid conversion issues
+  // Only use bounds for adaptive/fluid ads
   BOOL isGAM = [bannerView isKindOfClass:[GAMBannerView class]];
+  BOOL isAdaptiveOrFluid = GADAdSizeEqualToSize(gadAdSize, GADAdSizeFluid) ||
+                          [NSStringFromGADAdSize(gadAdSize) containsString:@"Adaptive"];
+  
+  if (isGAM && isAdaptiveOrFluid) {
+    // For GAM adaptive/fluid ads, the bounds might be more accurate after the ad loads
+    CGSize boundsSize = bannerView.bounds.size;
+    if (boundsSize.width > 0 && boundsSize.height > 0) {
+      adSize = boundsSize;
+    }
+  }
+  // For standard sizes like MEDIUM_RECTANGLE (300x250), use the logical size from GADAdSize
   
   [self.module storeCachedAdInfo:self.requestId
                           unitId:bannerView.adUnitID

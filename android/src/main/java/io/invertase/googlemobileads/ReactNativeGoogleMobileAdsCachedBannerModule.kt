@@ -117,8 +117,47 @@ class ReactNativeGoogleMobileAdsCachedBannerModule(reactContext: ReactApplicatio
                 adView.adListener = object : AdListener() {
                     override fun onAdLoaded() {
                         val adSize = adView.adSize
-                        val width = adSize?.getWidthInPixels(currentActivity) ?: 0
-                        val height = adSize?.getHeightInPixels(currentActivity) ?: 0
+                        var widthDp = 0.0
+                        var heightDp = 0.0
+                        
+                        if (adSize != null) {
+                            // For standard ad sizes, use the logical dp dimensions directly
+                            // This avoids issues with pixel conversion that can cause incorrect dimensions
+                            widthDp = adSize.width.toDouble()
+                            heightDp = adSize.height.toDouble()
+                            
+                            // Only use pixel-based calculation for adaptive or fluid ads
+                            if (adSize == AdSize.FLUID || 
+                                adSize.width == AdSize.AUTO_WIDTH || 
+                                adSize.height == AdSize.AUTO_HEIGHT) {
+                                
+                                // Get density for converting pixels to dp
+                                val density = currentActivity.resources.displayMetrics.density
+                                
+                                // Get width and height in pixels from AdSize
+                                val widthPx = adSize.getWidthInPixels(currentActivity)
+                                val heightPx = adSize.getHeightInPixels(currentActivity)
+                                
+                                // Convert pixels to density-independent pixels (dp)
+                                widthDp = (widthPx / density).toDouble()
+                                heightDp = (heightPx / density).toDouble()
+                            }
+                            
+                            // For GAM ads, also check the actual view dimensions after layout
+                            // but only if we don't already have reasonable dimensions
+                            if (isGAM && adView.width > 0 && adView.height > 0 && (widthDp <= 0 || heightDp <= 0)) {
+                                val density = currentActivity.resources.displayMetrics.density
+                                // Convert actual view dimensions from pixels to dp
+                                val viewWidthDp = (adView.width / density).toDouble()
+                                val viewHeightDp = (adView.height / density).toDouble()
+                                
+                                // Use view dimensions if they seem reasonable (not zero)
+                                if (viewWidthDp > 0 && viewHeightDp > 0) {
+                                    widthDp = viewWidthDp
+                                    heightDp = viewHeightDp
+                                }
+                            }
+                        }
 
                         val adInfoData = mapOf(
                             "requestId" to requestId,
@@ -126,8 +165,8 @@ class ReactNativeGoogleMobileAdsCachedBannerModule(reactContext: ReactApplicatio
                             "isGAM" to isGAM,
                             "sizesString" to sizesString,
                             "isLoaded" to true,
-                            "width" to width.toDouble(),
-                            "height" to height.toDouble()
+                            "width" to widthDp,
+                            "height" to heightDp
                         )
 
                         cachedAdInfo[requestId] = adInfoData
@@ -136,8 +175,8 @@ class ReactNativeGoogleMobileAdsCachedBannerModule(reactContext: ReactApplicatio
                             putString("requestId", requestId)
                             putString("unitId", unitId)
                             putBoolean("isLoaded", true)
-                            putDouble("width", width.toDouble())
-                            putDouble("height", height.toDouble())
+                            putDouble("width", widthDp)
+                            putDouble("height", heightDp)
                         }
                         promise.resolve(adInfo)
                     }

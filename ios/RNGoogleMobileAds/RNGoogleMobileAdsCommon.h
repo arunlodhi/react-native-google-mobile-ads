@@ -38,6 +38,8 @@
               withMaxHeight:(CGFloat)maxHeight
                    andWidth:(CGFloat)adWidth;
 
++ (GADAdSize)getAdSizeFromString:(NSString *)sizeString;
+
 + (BOOL)isAdManagerUnit:(NSString *)unitId;
 
 + (nullable UIViewController *)currentViewController;
