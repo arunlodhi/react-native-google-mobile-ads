@@ -67,17 +67,28 @@
     self.bannerView.delegate = self;
     self.bannerView.rootViewController = [RNGoogleMobileAdsCommon getCurrentViewController];
     
+    // Check if this is a fluid ad and handle layout accordingly
+    GADAdSize adSize = self.bannerView.adSize;
+    BOOL isFluid = GADAdSizeEqualToSize(adSize, GADAdSizeFluid);
+    
+    if (isFluid) {
+      // For fluid ads, use frame-based layout with autoresizing mask (same as regular banner)
+      self.bannerView.frame = self.bounds;
+      self.bannerView.autoresizingMask = UIViewAutoresizingFlexibleWidth;
+      self.bannerView.translatesAutoresizingMaskIntoConstraints = YES;
+    } else {
+      // For fixed-size ads, use constraints
+      self.bannerView.translatesAutoresizingMaskIntoConstraints = NO;
+      [NSLayoutConstraint activateConstraints:@[
+        [self.bannerView.centerXAnchor constraintEqualToAnchor:self.centerXAnchor],
+        [self.bannerView.centerYAnchor constraintEqualToAnchor:self.centerYAnchor],
+        [self.bannerView.widthAnchor constraintLessThanOrEqualToAnchor:self.widthAnchor],
+        [self.bannerView.heightAnchor constraintLessThanOrEqualToAnchor:self.heightAnchor]
+      ]];
+    }
+    
     // Add to view hierarchy
     [self addSubview:self.bannerView];
-    
-    // Set constraints to fill the container
-    self.bannerView.translatesAutoresizingMaskIntoConstraints = NO;
-    [NSLayoutConstraint activateConstraints:@[
-      [self.bannerView.centerXAnchor constraintEqualToAnchor:self.centerXAnchor],
-      [self.bannerView.centerYAnchor constraintEqualToAnchor:self.centerYAnchor],
-      [self.bannerView.widthAnchor constraintLessThanOrEqualToAnchor:self.widthAnchor],
-      [self.bannerView.heightAnchor constraintLessThanOrEqualToAnchor:self.heightAnchor]
-    ]];
     
     // Send loaded event if ad is already loaded
     if (self.bannerView.hasBeenReceived) {

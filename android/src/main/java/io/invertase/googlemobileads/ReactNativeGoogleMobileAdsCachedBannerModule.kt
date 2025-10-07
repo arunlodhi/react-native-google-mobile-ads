@@ -162,12 +162,37 @@ class ReactNativeGoogleMobileAdsCachedBannerModule(reactContext: ReactApplicatio
                             android.util.Log.d("CachedBannerModule", "  - IsFluid: $isFluid")
                             
                             if (isFluid) {
-                                // For fluid ads, use the view dimensions
+                                // For fluid ads, use the view dimensions and add layout change listener
                                 width = adView.width
                                 height = adView.height
                                 android.util.Log.d("CachedBannerModule", "Using FLUID logic - view dimensions:")
                                 android.util.Log.d("CachedBannerModule", "  - width (from adView.width): $width")
                                 android.util.Log.d("CachedBannerModule", "  - height (from adView.height): $height")
+                                
+                                // Add layout change listener for fluid ads (same as regular banner implementation)
+                                adView.addOnLayoutChangeListener { v, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom ->
+                                    val newWidthDp = com.facebook.react.uimanager.PixelUtil.toDIPFromPixel((right - left).toFloat()).toDouble()
+                                    val newHeightDp = com.facebook.react.uimanager.PixelUtil.toDIPFromPixel((bottom - top).toFloat()).toDouble()
+                                    
+                                    android.util.Log.d("CachedBannerModule", "Layout changed for fluid ad:")
+                                    android.util.Log.d("CachedBannerModule", "  - newWidthDp: $newWidthDp")
+                                    android.util.Log.d("CachedBannerModule", "  - newHeightDp: $newHeightDp")
+                                    
+                                    // Update cached ad info with new dimensions
+                                    val updatedAdInfoData = mapOf(
+                                        "requestId" to requestId,
+                                        "unitId" to unitId,
+                                        "isGAM" to isGAM,
+                                        "sizesString" to sizesString,
+                                        "isLoaded" to true,
+                                        "width" to newWidthDp,
+                                        "height" to newHeightDp
+                                    )
+                                    cachedAdInfo[requestId] = updatedAdInfoData
+                                    
+                                    // Note: For cached ads, we don't emit size change events directly
+                                    // The consuming component should call getCachedAdInfo to get updated dimensions
+                                }
                             } else {
                                 // For all other ad sizes, use getWidthInPixels and getHeightInPixels
                                 width = adSize.getWidthInPixels(currentActivity)
