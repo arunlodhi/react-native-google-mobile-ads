@@ -228,12 +228,33 @@ class ReactNativeGoogleMobileAdsCachedBannerModule(reactContext: ReactApplicatio
                                     // The consuming component should call getCachedAdInfo to get updated dimensions
                                 }
                             } else {
-                                // For all other ad sizes, use getWidthInPixels and getHeightInPixels
-                                width = adSize.getWidthInPixels(currentActivity)
-                                height = adSize.getHeightInPixels(currentActivity)
-                                android.util.Log.d("CachedBannerModule", "Using NON-FLUID logic - adSize pixels:")
-                                android.util.Log.d("CachedBannerModule", "  - width (from getWidthInPixels): $width")
-                                android.util.Log.d("CachedBannerModule", "  - height (from getHeightInPixels): $height")
+                                // For cached ads, prioritize actual view dimensions over theoretical AdSize dimensions
+                                // This ensures we get the actual rendered ad size, not just the AdSize specification
+                                val viewWidth = adView.width
+                                val viewHeight = adView.height
+                                val adSizeWidth = adSize.getWidthInPixels(currentActivity)
+                                val adSizeHeight = adSize.getHeightInPixels(currentActivity)
+                                
+                                android.util.Log.d("CachedBannerModule", "Comparing dimensions:")
+                                android.util.Log.d("CachedBannerModule", "  - viewWidth: $viewWidth, viewHeight: $viewHeight")
+                                android.util.Log.d("CachedBannerModule", "  - adSizeWidth: $adSizeWidth, adSizeHeight: $adSizeHeight")
+                                
+                                // Use view dimensions if they are non-zero and different from AdSize dimensions
+                                // This handles cases where the actual ad content has different dimensions than the AdSize spec
+                                if (viewWidth > 0 && viewHeight > 0 && (viewWidth != adSizeWidth || viewHeight != adSizeHeight)) {
+                                    width = viewWidth
+                                    height = viewHeight
+                                    android.util.Log.d("CachedBannerModule", "Using actual view dimensions (different from AdSize):")
+                                    android.util.Log.d("CachedBannerModule", "  - width (from adView.width): $width")
+                                    android.util.Log.d("CachedBannerModule", "  - height (from adView.height): $height")
+                                } else {
+                                    // Fallback to AdSize dimensions if view dimensions are zero or match AdSize
+                                    width = adSizeWidth
+                                    height = adSizeHeight
+                                    android.util.Log.d("CachedBannerModule", "Using AdSize dimensions (fallback):")
+                                    android.util.Log.d("CachedBannerModule", "  - width (from getWidthInPixels): $width")
+                                    android.util.Log.d("CachedBannerModule", "  - height (from getHeightInPixels): $height")
+                                }
                             }
                         } else {
                             // Fallback if adSize is null

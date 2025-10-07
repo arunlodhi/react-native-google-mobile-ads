@@ -251,12 +251,36 @@ RCT_EXPORT_METHOD(clearAllCachedAds:(RCTPromiseResolveBlock)resolve
   NSLog(@"CachedBannerModule: BannerView.frame: %@", NSStringFromCGRect(bannerView.frame));
   NSLog(@"CachedBannerModule: BannerView.adSize: %@", NSStringFromGADAdSize(bannerView.adSize));
   
-  // Use the exact same approach as RNGoogleMobileAdsBannerComponent
-  // This ensures React Native compatible sizes and consistent behavior
-  CGSize adSize = bannerView.bounds.size;
-  NSLog(@"CachedBannerModule: Using bounds.size for dimensions:");
-  NSLog(@"CachedBannerModule: - width (from bounds): %.2f", adSize.width);
-  NSLog(@"CachedBannerModule: - height (from bounds): %.2f", adSize.height);
+  // For cached ads, prioritize actual view dimensions over theoretical AdSize dimensions
+  // This ensures we get the actual rendered ad size, not just the AdSize specification
+  CGSize boundsSize = bannerView.bounds.size;
+  CGSize frameSize = bannerView.frame.size;
+  GADAdSize gadAdSize = bannerView.adSize;
+  
+  NSLog(@"CachedBannerModule: Comparing dimensions:");
+  NSLog(@"CachedBannerModule: - boundsSize: %.2fx%.2f", boundsSize.width, boundsSize.height);
+  NSLog(@"CachedBannerModule: - frameSize: %.2fx%.2f", frameSize.width, frameSize.height);
+  NSLog(@"CachedBannerModule: - GADAdSize: %@", NSStringFromGADAdSize(gadAdSize));
+  
+  // Use bounds size if it's non-zero, otherwise fallback to frame size
+  CGSize adSize;
+  if (boundsSize.width > 0 && boundsSize.height > 0) {
+    adSize = boundsSize;
+    NSLog(@"CachedBannerModule: Using bounds.size for dimensions:");
+    NSLog(@"CachedBannerModule: - width (from bounds): %.2f", adSize.width);
+    NSLog(@"CachedBannerModule: - height (from bounds): %.2f", adSize.height);
+  } else if (frameSize.width > 0 && frameSize.height > 0) {
+    adSize = frameSize;
+    NSLog(@"CachedBannerModule: Using frame.size for dimensions (bounds was zero):");
+    NSLog(@"CachedBannerModule: - width (from frame): %.2f", adSize.width);
+    NSLog(@"CachedBannerModule: - height (from frame): %.2f", adSize.height);
+  } else {
+    // Fallback to GADAdSize if both bounds and frame are zero
+    adSize = CGSizeMake(gadAdSize.size.width, gadAdSize.size.height);
+    NSLog(@"CachedBannerModule: Using GADAdSize for dimensions (both bounds and frame were zero):");
+    NSLog(@"CachedBannerModule: - width (from GADAdSize): %.2f", adSize.width);
+    NSLog(@"CachedBannerModule: - height (from GADAdSize): %.2f", adSize.height);
+  }
   
   [self.module storeCachedAdInfo:self.requestId
                           unitId:bannerView.adUnitID
