@@ -282,6 +282,21 @@ RCT_EXPORT_METHOD(clearAllCachedAds:(RCTPromiseResolveBlock)resolve
     NSLog(@"CachedBannerModule: - height (from GADAdSize): %.2f", adSize.height);
   }
   
+  // Resize the bannerView to match the actual ad content dimensions
+  // This ensures the cached ad takes only the required space
+  CGRect currentFrame = bannerView.frame;
+  if (adSize.width > 0 && adSize.height > 0 && 
+      (currentFrame.size.width != adSize.width || currentFrame.size.height != adSize.height)) {
+    
+    NSLog(@"CachedBannerModule: Resizing bannerView to match ad content:");
+    NSLog(@"CachedBannerModule: - from: %.2fx%.2f", currentFrame.size.width, currentFrame.size.height);
+    NSLog(@"CachedBannerModule: - to: %.2fx%.2f", adSize.width, adSize.height);
+    
+    bannerView.frame = CGRectMake(currentFrame.origin.x, currentFrame.origin.y, adSize.width, adSize.height);
+    
+    NSLog(@"CachedBannerModule: BannerView resized - new frame: %@", NSStringFromCGRect(bannerView.frame));
+  }
+  
   [self.module storeCachedAdInfo:self.requestId
                           unitId:bannerView.adUnitID
                            isGAM:isGAM

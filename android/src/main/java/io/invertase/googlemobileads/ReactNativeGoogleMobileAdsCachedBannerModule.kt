@@ -269,6 +269,31 @@ class ReactNativeGoogleMobileAdsCachedBannerModule(reactContext: ReactApplicatio
                         android.util.Log.d("CachedBannerModule", "  - width (pixels): $width")
                         android.util.Log.d("CachedBannerModule", "  - height (pixels): $height")
                         
+                        // Resize the adView container to match the actual ad content dimensions
+                        // This ensures the cached ad takes only the required space
+                        if (width > 0 && height > 0) {
+                            val currentLayoutParams = adView.layoutParams
+                            if (currentLayoutParams != null && (currentLayoutParams.width != width || currentLayoutParams.height != height)) {
+                                android.util.Log.d("CachedBannerModule", "Resizing adView container to match ad content:")
+                                android.util.Log.d("CachedBannerModule", "  - from: ${currentLayoutParams.width}x${currentLayoutParams.height}")
+                                android.util.Log.d("CachedBannerModule", "  - to: ${width}x${height}")
+                                
+                                currentLayoutParams.width = width
+                                currentLayoutParams.height = height
+                                adView.layoutParams = currentLayoutParams
+                                
+                                // Re-measure and layout with the new dimensions
+                                val widthMeasureSpec = android.view.View.MeasureSpec.makeMeasureSpec(width, android.view.View.MeasureSpec.EXACTLY)
+                                val heightMeasureSpec = android.view.View.MeasureSpec.makeMeasureSpec(height, android.view.View.MeasureSpec.EXACTLY)
+                                adView.measure(widthMeasureSpec, heightMeasureSpec)
+                                adView.layout(0, 0, width, height)
+                                
+                                android.util.Log.d("CachedBannerModule", "AdView resized - new dimensions:")
+                                android.util.Log.d("CachedBannerModule", "  - adView.width: ${adView.width}")
+                                android.util.Log.d("CachedBannerModule", "  - adView.height: ${adView.height}")
+                            }
+                        }
+                        
                         // Convert pixels to DP using PixelUtil (exact same as regular banner implementation)
                         val widthDp = com.facebook.react.uimanager.PixelUtil.toDIPFromPixel(width.toFloat()).toDouble()
                         val heightDp = com.facebook.react.uimanager.PixelUtil.toDIPFromPixel(height.toFloat()).toDouble()
