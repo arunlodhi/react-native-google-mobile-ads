@@ -88,6 +88,18 @@ class ReactNativeGoogleMobileAdsCachedBannerModule(reactContext: ReactApplicatio
                     
                     val layoutParams = android.view.ViewGroup.LayoutParams(widthPx, heightPx)
                     adView.layoutParams = layoutParams
+                    
+                    // Force measure and layout the view so it has proper dimensions
+                    val widthMeasureSpec = android.view.View.MeasureSpec.makeMeasureSpec(widthPx, android.view.View.MeasureSpec.EXACTLY)
+                    val heightMeasureSpec = android.view.View.MeasureSpec.makeMeasureSpec(heightPx, android.view.View.MeasureSpec.EXACTLY)
+                    adView.measure(widthMeasureSpec, heightMeasureSpec)
+                    adView.layout(0, 0, adView.measuredWidth, adView.measuredHeight)
+                    
+                    android.util.Log.d("CachedBannerModule", "After measure/layout:")
+                    android.util.Log.d("CachedBannerModule", "  - adView.width: ${adView.width}")
+                    android.util.Log.d("CachedBannerModule", "  - adView.height: ${adView.height}")
+                    android.util.Log.d("CachedBannerModule", "  - adView.measuredWidth: ${adView.measuredWidth}")
+                    android.util.Log.d("CachedBannerModule", "  - adView.measuredHeight: ${adView.measuredHeight}")
                 }
 
                 // Set ad sizes
