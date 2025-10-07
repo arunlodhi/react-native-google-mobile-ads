@@ -68,6 +68,28 @@ class ReactNativeGoogleMobileAdsCachedBannerModule(reactContext: ReactApplicatio
 
                 adView.adUnitId = unitId
 
+                // Initialize adView with initial dimensions if provided
+                val maxHeight = if (config.hasKey("maxHeight")) config.getDouble("maxHeight") else 0.0
+                val width = if (config.hasKey("width")) config.getDouble("width") else 0.0
+                
+                android.util.Log.d("CachedBannerModule", "=== INITIAL DIMENSIONS DEBUG ===")
+                android.util.Log.d("CachedBannerModule", "MaxHeight from config: $maxHeight")
+                android.util.Log.d("CachedBannerModule", "Width from config: $width")
+                
+                if (maxHeight > 0 || width > 0) {
+                    // Convert DP to pixels for layout params
+                    val density = currentActivity.resources.displayMetrics.density
+                    val widthPx = if (width > 0) (width * density).toInt() else android.view.ViewGroup.LayoutParams.WRAP_CONTENT
+                    val heightPx = if (maxHeight > 0) (maxHeight * density).toInt() else android.view.ViewGroup.LayoutParams.WRAP_CONTENT
+                    
+                    android.util.Log.d("CachedBannerModule", "Setting initial layout params:")
+                    android.util.Log.d("CachedBannerModule", "  - widthPx: $widthPx")
+                    android.util.Log.d("CachedBannerModule", "  - heightPx: $heightPx")
+                    
+                    val layoutParams = android.view.ViewGroup.LayoutParams(widthPx, heightPx)
+                    adView.layoutParams = layoutParams
+                }
+
                 // Set ad sizes
                 android.util.Log.d("CachedBannerModule", "=== SIZE CONFIGURATION DEBUG ===")
                 android.util.Log.d("CachedBannerModule", "IsGAM: $isGAM")
