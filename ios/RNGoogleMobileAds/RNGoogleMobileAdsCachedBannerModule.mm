@@ -89,8 +89,24 @@ RCT_EXPORT_METHOD(requestCachedBannerAd:(NSDictionary *)config
   
   bannerView.adUnitID = unitId;
   
-  NSLog(@"CachedBannerModule: === SIMPLIFIED AD LOADING (No Initial Container Sizing) ===");
-  NSLog(@"CachedBannerModule: BannerView created without initial frame constraints");
+  // Initialize bannerView with initial dimensions if provided
+  CGFloat maxHeight = config[@"maxHeight"] ? [config[@"maxHeight"] floatValue] : 0.0f;
+  CGFloat width = config[@"width"] ? [config[@"width"] floatValue] : 0.0f;
+  
+  NSLog(@"CachedBannerModule: === INITIAL DIMENSIONS DEBUG (iOS) ===");
+  NSLog(@"CachedBannerModule: MaxHeight from config: %.2f", maxHeight);
+  NSLog(@"CachedBannerModule: Width from config: %.2f", width);
+  
+  if (maxHeight > 0 || width > 0) {
+    CGFloat frameWidth = width > 0 ? width : 320.0f; // Default width if not specified
+    CGFloat frameHeight = maxHeight > 0 ? maxHeight : 50.0f; // Default height if not specified
+    
+    NSLog(@"CachedBannerModule: Setting initial frame:");
+    NSLog(@"CachedBannerModule: - frameWidth: %.2f", frameWidth);
+    NSLog(@"CachedBannerModule: - frameHeight: %.2f", frameHeight);
+    
+    bannerView.frame = CGRectMake(0, 0, frameWidth, frameHeight);
+  }
   
   // Set ad sizes
   if (isGAM) {

@@ -67,9 +67,40 @@ class ReactNativeGoogleMobileAdsCachedBannerModule(reactContext: ReactApplicatio
                 }
 
                 adView.adUnitId = unitId
+
+                // Initialize adView with initial dimensions if provided
+                val maxHeight = if (config.hasKey("maxHeight")) config.getDouble("maxHeight") else 0.0
+                val width = if (config.hasKey("width")) config.getDouble("width") else 0.0
                 
-                android.util.Log.d("CachedBannerModule", "=== SIMPLIFIED AD LOADING (No Initial Container Sizing) ===")
-                android.util.Log.d("CachedBannerModule", "AdView created without initial layout constraints")
+                android.util.Log.d("CachedBannerModule", "=== INITIAL DIMENSIONS DEBUG ===")
+                android.util.Log.d("CachedBannerModule", "MaxHeight from config: $maxHeight")
+                android.util.Log.d("CachedBannerModule", "Width from config: $width")
+                
+                if (maxHeight > 0 || width > 0) {
+                    // Convert DP to pixels for layout params
+                    val density = currentActivity.resources.displayMetrics.density
+                    val widthPx = if (width > 0) (width * density).toInt() else android.view.ViewGroup.LayoutParams.WRAP_CONTENT
+                    val heightPx = if (maxHeight > 0) (maxHeight * density).toInt() else android.view.ViewGroup.LayoutParams.WRAP_CONTENT
+                    
+                    android.util.Log.d("CachedBannerModule", "Setting initial layout params:")
+                    android.util.Log.d("CachedBannerModule", "  - widthPx: $widthPx")
+                    android.util.Log.d("CachedBannerModule", "  - heightPx: $heightPx")
+                    
+                    val layoutParams = android.view.ViewGroup.LayoutParams(widthPx, heightPx)
+                    adView.layoutParams = layoutParams
+                    
+                    // Force measure and layout the view so it has proper dimensions
+                    val widthMeasureSpec = android.view.View.MeasureSpec.makeMeasureSpec(widthPx, android.view.View.MeasureSpec.EXACTLY)
+                    val heightMeasureSpec = android.view.View.MeasureSpec.makeMeasureSpec(heightPx, android.view.View.MeasureSpec.EXACTLY)
+                    adView.measure(widthMeasureSpec, heightMeasureSpec)
+                    adView.layout(0, 0, adView.measuredWidth, adView.measuredHeight)
+                    
+                    android.util.Log.d("CachedBannerModule", "After measure/layout:")
+                    android.util.Log.d("CachedBannerModule", "  - adView.width: ${adView.width}")
+                    android.util.Log.d("CachedBannerModule", "  - adView.height: ${adView.height}")
+                    android.util.Log.d("CachedBannerModule", "  - adView.measuredWidth: ${adView.measuredWidth}")
+                    android.util.Log.d("CachedBannerModule", "  - adView.measuredHeight: ${adView.measuredHeight}")
+                }
 
                 // Set ad sizes
                 android.util.Log.d("CachedBannerModule", "=== SIZE CONFIGURATION DEBUG ===")
