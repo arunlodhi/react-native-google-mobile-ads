@@ -18,6 +18,7 @@ package io.invertase.googlemobileads;
  */
 
 import android.view.ViewGroup;
+import android.widget.FrameLayout;
 import androidx.annotation.NonNull;
 import com.facebook.react.bridge.Arguments;
 import com.facebook.react.bridge.ReactContext;
@@ -129,15 +130,8 @@ public class ReactNativeGoogleMobileAdsCachedBannerViewManager
   }
 
   private void setupCachedAdView(ReactNativeAdView reactViewGroup, String requestId) {
-    // Remove existing ad view
-    BaseAdView existingAdView = getCachedAdView(reactViewGroup);
-    if (existingAdView != null) {
-      existingAdView.setAdListener(null);
-      if (existingAdView instanceof AdManagerAdView) {
-        ((AdManagerAdView) existingAdView).setAppEventListener(null);
-      }
-      reactViewGroup.removeView(existingAdView);
-    }
+    // Remove existing ad view and container
+    clearExistingAdView(reactViewGroup);
 
     // Get cached banner module
     ReactContext reactContext = (ReactContext) reactViewGroup.getContext();
@@ -151,7 +145,7 @@ public class ReactNativeGoogleMobileAdsCachedBannerViewManager
       BaseAdView cachedAdView = cachedBannerModule.getCachedBannerView(requestId);
       
       if (cachedAdView != null) {
-        attachCachedAdView(reactViewGroup, cachedAdView);
+        attachCachedAdViewWithFrameLayout(reactViewGroup, cachedAdView);
       } else {
         // Ad not ready yet, send a failed to load event to indicate the ad is not available
         WritableMap payload = Arguments.createMap();
@@ -168,100 +162,59 @@ public class ReactNativeGoogleMobileAdsCachedBannerViewManager
     }
   }
 
-  private void attachNewAdView(ReactNativeAdView reactViewGroup, BaseAdView newAdView) {
-    // This method handles fresh ad views that don't have parent issues
-    android.util.Log.d("CachedBannerView", "Attaching new ad view (no parent issues)");
+  private void clearExistingAdView(ReactNativeAdView reactViewGroup) {
+    android.util.Log.d("CachedBannerView", "Clearing existing ad view, child count: " + reactViewGroup.getChildCount());
     
-    // Set up event listeners
-    newAdView.setOnPaidEventListener(
-        new OnPaidEventListener() {
-          @Override
-          public void onPaidEvent(AdValue adValue) {
-            WritableMap payload = Arguments.createMap();
-            payload.putDouble("value", 1e-6 * adValue.getValueMicros());
-            payload.putDouble("precision", adValue.getPrecisionType());
-            payload.putString("currency", adValue.getCurrencyCode());
-            sendEvent(reactViewGroup, EVENT_PAID, payload);
+    // Remove all children (including frame layout containers)
+    for (int i = reactViewGroup.getChildCount() - 1; i >= 0; i--) {
+      android.view.View child = reactViewGroup.getChildAt(i);
+      android.util.Log.d("CachedBannerView", "Removing child at index " + i + ": " + child.getClass().getSimpleName());
+      
+      // If it's a FrameLayout container, clean up the ad view inside it first
+      if (child instanceof FrameLayout) {
+        FrameLayout container = (FrameLayout) child;
+        if (container.getChildCount() > 0) {
+          android.view.View adViewChild = container.getChildAt(0);
+          if (adViewChild instanceof BaseAdView) {
+            BaseAdView adView = (BaseAdView) adViewChild;
+            android.util.Log.d("CachedBannerView", "Cleaning up ad view inside container");
+            cleanupAdViewListeners(adView);
           }
-        });
-
-    newAdView.setAdListener(
-        new AdListener() {
-          @Override
-          public void onAdLoaded() {
-            WritableMap payload = Arguments.createMap();
-            payload.putDouble("width", PixelUtil.toDIPFromPixel(newAdView.getWidth()));
-            payload.putDouble("height", PixelUtil.toDIPFromPixel(newAdView.getHeight()));
-            sendEvent(reactViewGroup, EVENT_AD_LOADED, payload);
-          }
-
-          @Override
-          public void onAdFailedToLoad(@NonNull LoadAdError loadAdError) {
-            int errorCode = loadAdError.getCode();
-            WritableMap payload = ReactNativeGoogleMobileAdsCommon.errorCodeToMap(errorCode);
-            sendEvent(reactViewGroup, EVENT_AD_FAILED_TO_LOAD, payload);
-          }
-
-          @Override
-          public void onAdOpened() {
-            sendEvent(reactViewGroup, EVENT_AD_OPENED, null);
-          }
-
-          @Override
-          public void onAdClosed() {
-            sendEvent(reactViewGroup, EVENT_AD_CLOSED, null);
-          }
-
-          @Override
-          public void onAdImpression() {
-            sendEvent(reactViewGroup, EVENT_AD_IMPRESSION, null);
-          }
-
-          @Override
-          public void onAdClicked() {
-            sendEvent(reactViewGroup, EVENT_AD_CLICKED, null);
-          }
-        });
-
-    if (newAdView instanceof AdManagerAdView) {
-      ((AdManagerAdView) newAdView)
-          .setAppEventListener(
-              new AppEventListener() {
-                @Override
-                public void onAppEvent(@NonNull String name, @Nullable String data) {
-                  WritableMap payload = Arguments.createMap();
-                  payload.putString("name", name);
-                  payload.putString("data", data);
-                  sendEvent(reactViewGroup, EVENT_APP_EVENT, payload);
-                }
-              });
-    }
-
-    // Add to view hierarchy with proper layout parameters
-    ViewGroup.LayoutParams layoutParams = new ViewGroup.LayoutParams(
-        ViewGroup.LayoutParams.WRAP_CONTENT,
-        ViewGroup.LayoutParams.WRAP_CONTENT
-    );
-    newAdView.setLayoutParams(layoutParams);
-    reactViewGroup.addView(newAdView);
-    
-    android.util.Log.d("CachedBannerView", "Successfully added new ad view");
-    
-    // Trigger onAdLoaded event immediately since this is a pre-loaded cached ad
-    newAdView.post(new Runnable() {
-      @Override
-      public void run() {
-        newAdView.requestLayout();
-        
-        WritableMap payload = Arguments.createMap();
-        payload.putDouble("width", PixelUtil.toDIPFromPixel(newAdView.getWidth()));
-        payload.putDouble("height", PixelUtil.toDIPFromPixel(newAdView.getHeight()));
-        sendEvent(reactViewGroup, EVENT_AD_LOADED, payload);
+        }
+        container.removeAllViews();
+      } else if (child instanceof BaseAdView) {
+        // Direct ad view (legacy approach)
+        BaseAdView adView = (BaseAdView) child;
+        android.util.Log.d("CachedBannerView", "Cleaning up direct ad view");
+        cleanupAdViewListeners(adView);
       }
-    });
+      
+      reactViewGroup.removeViewAt(i);
+    }
+    
+    android.util.Log.d("CachedBannerView", "Finished clearing, child count now: " + reactViewGroup.getChildCount());
   }
 
-  private void attachCachedAdView(ReactNativeAdView reactViewGroup, BaseAdView cachedAdView) {
+  private void cleanupAdViewListeners(BaseAdView adView) {
+    try {
+      adView.setAdListener(null);
+      adView.setOnPaidEventListener(null);
+      if (adView instanceof AdManagerAdView) {
+        ((AdManagerAdView) adView).setAppEventListener(null);
+      }
+    } catch (Exception e) {
+      android.util.Log.w("CachedBannerView", "Error cleaning up ad view listeners: " + e.getMessage());
+    }
+  }
+
+  /**
+   * Attach cached ad view using frame layout container approach (inspired by Lokal Android app)
+   * This approach provides better isolation and prevents parent attachment issues
+   */
+  private void attachCachedAdViewWithFrameLayout(ReactNativeAdView reactViewGroup, BaseAdView cachedAdView) {
+    android.util.Log.d("CachedBannerView", "=== FRAME LAYOUT ATTACHMENT DEBUG ===");
+    android.util.Log.d("CachedBannerView", "Starting frame layout attachment process");
+    
     // Remove from previous parent if any - this is critical for reusing cached ads
     ViewGroup parent = (ViewGroup) cachedAdView.getParent();
     android.util.Log.d("CachedBannerView", "Initial parent: " + (parent != null ? parent.getClass().getSimpleName() : "null"));
@@ -280,7 +233,7 @@ public class ReactNativeGoogleMobileAdsCachedBannerViewManager
       }
     }
     
-    // Multiple attempts to ensure parent is null
+    // Multiple attempts to ensure parent is null (same as original logic)
     int attempts = 0;
     while (cachedAdView.getParent() != null && attempts < 3) {
       attempts++;
@@ -308,13 +261,139 @@ public class ReactNativeGoogleMobileAdsCachedBannerViewManager
     // Final check - if still has parent, force proceed but log warning
     if (cachedAdView.getParent() != null) {
       android.util.Log.w("CachedBannerView", "Ad view still has parent after " + attempts + " attempts, forcing attachment anyway");
-      // Don't return here - try to proceed with attachment
     } else {
       android.util.Log.d("CachedBannerView", "Successfully removed parent after " + attempts + " attempts");
     }
 
-    // Set up event listeners
-    cachedAdView.setOnPaidEventListener(
+    // Create a FrameLayout container (inspired by Lokal's BottomBannerAdView approach)
+    FrameLayout adContainer = new FrameLayout(reactViewGroup.getContext());
+    android.util.Log.d("CachedBannerView", "Created FrameLayout container");
+    
+    // Get the actual ad dimensions for proper sizing
+    int adWidth = cachedAdView.getWidth();
+    int adHeight = cachedAdView.getHeight();
+    android.util.Log.d("CachedBannerView", "Cached ad view dimensions: " + adWidth + "x" + adHeight);
+    
+    // If ad view doesn't have dimensions yet, use wrap_content and let it size itself
+    ViewGroup.LayoutParams containerParams;
+    if (adWidth > 0 && adHeight > 0) {
+      // Use exact dimensions if available
+      containerParams = new ViewGroup.LayoutParams(adWidth, adHeight);
+      android.util.Log.d("CachedBannerView", "Using exact container dimensions: " + adWidth + "x" + adHeight);
+    } else {
+      // Use wrap_content to let the ad size itself
+      containerParams = new ViewGroup.LayoutParams(
+          ViewGroup.LayoutParams.WRAP_CONTENT,
+          ViewGroup.LayoutParams.WRAP_CONTENT
+      );
+      android.util.Log.d("CachedBannerView", "Using wrap_content container dimensions");
+    }
+    
+    adContainer.setLayoutParams(containerParams);
+    
+    // Set up ad view layout params for the container
+    FrameLayout.LayoutParams adViewParams = new FrameLayout.LayoutParams(
+        FrameLayout.LayoutParams.WRAP_CONTENT,
+        FrameLayout.LayoutParams.WRAP_CONTENT
+    );
+    cachedAdView.setLayoutParams(adViewParams);
+    
+    // Add the cached ad view to the container
+    try {
+      adContainer.addView(cachedAdView);
+      android.util.Log.d("CachedBannerView", "Successfully added cached ad view to container");
+    } catch (IllegalStateException e) {
+      if (e.getMessage() != null && e.getMessage().contains("already has a parent")) {
+        android.util.Log.w("CachedBannerView", "Child already has parent error during container addition, forcing removal");
+        
+        // Force remove using reflection as last resort
+        try {
+          java.lang.reflect.Field parentField = android.view.View.class.getDeclaredField("mParent");
+          parentField.setAccessible(true);
+          parentField.set(cachedAdView, null);
+          android.util.Log.d("CachedBannerView", "Forcefully cleared parent using reflection");
+          
+          // Try adding to container again
+          adContainer.addView(cachedAdView);
+          android.util.Log.d("CachedBannerView", "Successfully added cached ad view to container after reflection fix");
+        } catch (Exception reflectionEx) {
+          android.util.Log.e("CachedBannerView", "Failed to add to container even with reflection: " + reflectionEx.getMessage());
+          WritableMap payload = Arguments.createMap();
+          payload.putString("code", "container-attachment-failed");
+          payload.putString("message", "Failed to attach cached ad view to container: " + reflectionEx.getMessage());
+          sendEvent(reactViewGroup, EVENT_AD_FAILED_TO_LOAD, payload);
+          return;
+        }
+      } else {
+        android.util.Log.e("CachedBannerView", "Unexpected error adding view to container: " + e.getMessage());
+        WritableMap payload = Arguments.createMap();
+        payload.putString("code", "container-attachment-failed");
+        payload.putString("message", "Failed to attach cached ad view to container: " + e.getMessage());
+        sendEvent(reactViewGroup, EVENT_AD_FAILED_TO_LOAD, payload);
+        return;
+      }
+    }
+    
+    // Set up event listeners (same as original logic)
+    setupAdViewEventListeners(reactViewGroup, cachedAdView);
+    
+    // Add the container to the React view group
+    try {
+      reactViewGroup.addView(adContainer);
+      android.util.Log.d("CachedBannerView", "Successfully added container to React view group");
+    } catch (Exception e) {
+      android.util.Log.e("CachedBannerView", "Failed to add container to React view group: " + e.getMessage());
+      WritableMap payload = Arguments.createMap();
+      payload.putString("code", "react-view-attachment-failed");
+      payload.putString("message", "Failed to attach container to React view: " + e.getMessage());
+      sendEvent(reactViewGroup, EVENT_AD_FAILED_TO_LOAD, payload);
+      return;
+    }
+    
+    // Force a layout pass and trigger onAdLoaded event
+    adContainer.post(new Runnable() {
+      @Override
+      public void run() {
+        android.util.Log.d("CachedBannerView", "=== POST-LAYOUT DIMENSIONS DEBUG ===");
+        
+        // Request layout for both container and ad view
+        adContainer.requestLayout();
+        cachedAdView.requestLayout();
+        
+        // Get final dimensions
+        int finalAdWidth = cachedAdView.getWidth();
+        int finalAdHeight = cachedAdView.getHeight();
+        int finalContainerWidth = adContainer.getWidth();
+        int finalContainerHeight = adContainer.getHeight();
+        
+        android.util.Log.d("CachedBannerView", "Final ad view dimensions: " + finalAdWidth + "x" + finalAdHeight);
+        android.util.Log.d("CachedBannerView", "Final container dimensions: " + finalContainerWidth + "x" + finalContainerHeight);
+        
+        // Use the larger of the two dimensions for reporting (container should match or exceed ad view)
+        int reportWidth = Math.max(finalAdWidth, finalContainerWidth);
+        int reportHeight = Math.max(finalAdHeight, finalContainerHeight);
+        
+        android.util.Log.d("CachedBannerView", "Reporting dimensions: " + reportWidth + "x" + reportHeight);
+        
+        // Convert to DP and trigger onAdLoaded event
+        double widthDp = PixelUtil.toDIPFromPixel(reportWidth);
+        double heightDp = PixelUtil.toDIPFromPixel(reportHeight);
+        
+        android.util.Log.d("CachedBannerView", "Reporting DP dimensions: " + widthDp + "x" + heightDp);
+        
+        WritableMap payload = Arguments.createMap();
+        payload.putDouble("width", widthDp);
+        payload.putDouble("height", heightDp);
+        sendEvent(reactViewGroup, EVENT_AD_LOADED, payload);
+        
+        android.util.Log.d("CachedBannerView", "=== FRAME LAYOUT ATTACHMENT COMPLETE ===");
+      }
+    });
+  }
+
+  private void setupAdViewEventListeners(ReactNativeAdView reactViewGroup, BaseAdView adView) {
+    // Set up paid event listener
+    adView.setOnPaidEventListener(
         new OnPaidEventListener() {
           @Override
           public void onPaidEvent(AdValue adValue) {
@@ -326,14 +405,14 @@ public class ReactNativeGoogleMobileAdsCachedBannerViewManager
           }
         });
 
-    cachedAdView.setAdListener(
+    // Set up ad listener
+    adView.setAdListener(
         new AdListener() {
           @Override
           public void onAdLoaded() {
-            WritableMap payload = Arguments.createMap();
-            payload.putDouble("width", PixelUtil.toDIPFromPixel(cachedAdView.getWidth()));
-            payload.putDouble("height", PixelUtil.toDIPFromPixel(cachedAdView.getHeight()));
-            sendEvent(reactViewGroup, EVENT_AD_LOADED, payload);
+            // Note: We don't trigger onAdLoaded here because the ad is already loaded
+            // The onAdLoaded event will be triggered after the view is properly attached
+            android.util.Log.d("CachedBannerView", "AdListener.onAdLoaded called (cached ad)");
           }
 
           @Override
@@ -364,8 +443,9 @@ public class ReactNativeGoogleMobileAdsCachedBannerViewManager
           }
         });
 
-    if (cachedAdView instanceof AdManagerAdView) {
-      ((AdManagerAdView) cachedAdView)
+    // Set up app event listener for GAM ads
+    if (adView instanceof AdManagerAdView) {
+      ((AdManagerAdView) adView)
           .setAppEventListener(
               new AppEventListener() {
                 @Override
@@ -377,117 +457,35 @@ public class ReactNativeGoogleMobileAdsCachedBannerViewManager
                 }
               });
     }
-
-    // Add to view hierarchy with proper layout parameters
-    ViewGroup.LayoutParams layoutParams = new ViewGroup.LayoutParams(
-        ViewGroup.LayoutParams.WRAP_CONTENT,
-        ViewGroup.LayoutParams.WRAP_CONTENT
-    );
-    cachedAdView.setLayoutParams(layoutParams);
-    
-    // Try to add the view, if it fails due to parent issues, force remove and try again
-    try {
-      reactViewGroup.addView(cachedAdView);
-      android.util.Log.d("CachedBannerView", "Successfully added cached ad view to new parent");
-    } catch (IllegalStateException e) {
-      if (e.getMessage() != null && e.getMessage().contains("already has a parent")) {
-        android.util.Log.w("CachedBannerView", "Child already has parent error, forcing removal and retrying");
-        
-        // Force remove from any parent using multiple approaches
-        ViewGroup currentParent = (ViewGroup) cachedAdView.getParent();
-        if (currentParent != null) {
-          try {
-            currentParent.removeView(cachedAdView);
-            android.util.Log.d("CachedBannerView", "Force removed from parent: " + currentParent.getClass().getSimpleName());
-          } catch (Exception removeEx) {
-            android.util.Log.e("CachedBannerView", "Failed to force remove: " + removeEx.getMessage());
-          }
-        }
-        
-        // Use reflection to forcefully clear the parent reference if still exists
-        if (cachedAdView.getParent() != null) {
-          try {
-            java.lang.reflect.Field parentField = android.view.View.class.getDeclaredField("mParent");
-            parentField.setAccessible(true);
-            parentField.set(cachedAdView, null);
-            android.util.Log.d("CachedBannerView", "Forcefully cleared parent using reflection");
-          } catch (Exception reflectionEx) {
-            android.util.Log.w("CachedBannerView", "Failed to clear parent via reflection: " + reflectionEx.getMessage());
-          }
-        }
-        
-        // Try adding again
-        try {
-          reactViewGroup.addView(cachedAdView);
-          android.util.Log.d("CachedBannerView", "Successfully added cached ad view after force removal");
-        } catch (Exception retryEx) {
-          android.util.Log.e("CachedBannerView", "Failed to add view even after force removal: " + retryEx.getMessage());
-          
-          // Last resort: create a new container view and add the ad view to it
-          try {
-            android.widget.FrameLayout wrapper = new android.widget.FrameLayout(reactViewGroup.getContext());
-            wrapper.setLayoutParams(layoutParams);
-            
-            // Clear parent one more time before adding to wrapper
-            if (cachedAdView.getParent() != null) {
-              ((ViewGroup) cachedAdView.getParent()).removeView(cachedAdView);
-            }
-            
-            wrapper.addView(cachedAdView);
-            reactViewGroup.addView(wrapper);
-            android.util.Log.d("CachedBannerView", "Successfully added cached ad view using wrapper approach");
-          } catch (Exception wrapperEx) {
-            android.util.Log.e("CachedBannerView", "Even wrapper approach failed: " + wrapperEx.getMessage());
-            WritableMap payload = Arguments.createMap();
-            payload.putString("code", "view-attachment-failed");
-            payload.putString("message", "Failed to attach cached ad view: " + wrapperEx.getMessage());
-            sendEvent(reactViewGroup, EVENT_AD_FAILED_TO_LOAD, payload);
-            return;
-          }
-        }
-      } else {
-        android.util.Log.e("CachedBannerView", "Unexpected error adding view: " + e.getMessage());
-        WritableMap payload = Arguments.createMap();
-        payload.putString("code", "view-attachment-failed");
-        payload.putString("message", "Failed to attach cached ad view: " + e.getMessage());
-        sendEvent(reactViewGroup, EVENT_AD_FAILED_TO_LOAD, payload);
-        return;
-      }
-    }
-    
-    // Force a layout pass to ensure the ad view is properly sized and positioned
-    cachedAdView.post(new Runnable() {
-      @Override
-      public void run() {
-        cachedAdView.requestLayout();
-        
-        // Trigger onAdLoaded event after layout is complete
-        WritableMap payload = Arguments.createMap();
-        payload.putDouble("width", PixelUtil.toDIPFromPixel(cachedAdView.getWidth()));
-        payload.putDouble("height", PixelUtil.toDIPFromPixel(cachedAdView.getHeight()));
-        sendEvent(reactViewGroup, EVENT_AD_LOADED, payload);
-      }
-    });
   }
 
   @Nullable
   private BaseAdView getCachedAdView(ViewGroup reactViewGroup) {
     if (reactViewGroup.getChildCount() > 0) {
-      return (BaseAdView) reactViewGroup.getChildAt(0);
+      android.view.View child = reactViewGroup.getChildAt(0);
+      
+      // Check if it's a FrameLayout container (new approach)
+      if (child instanceof FrameLayout) {
+        FrameLayout container = (FrameLayout) child;
+        if (container.getChildCount() > 0) {
+          android.view.View adViewChild = container.getChildAt(0);
+          if (adViewChild instanceof BaseAdView) {
+            return (BaseAdView) adViewChild;
+          }
+        }
+      }
+      // Check if it's a direct BaseAdView (legacy approach)
+      else if (child instanceof BaseAdView) {
+        return (BaseAdView) child;
+      }
     }
     return null;
   }
 
   @Override
   public void onDropViewInstance(@NonNull ReactNativeAdView reactViewGroup) {
-    BaseAdView adView = getCachedAdView(reactViewGroup);
-    if (adView != null) {
-      adView.setAdListener(null);
-      if (adView instanceof AdManagerAdView) {
-        ((AdManagerAdView) adView).setAppEventListener(null);
-      }
-      reactViewGroup.removeView(adView);
-    }
+    android.util.Log.d("CachedBannerView", "onDropViewInstance called");
+    clearExistingAdView(reactViewGroup);
     super.onDropViewInstance(reactViewGroup);
   }
 
