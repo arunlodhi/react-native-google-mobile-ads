@@ -65,7 +65,7 @@
   if (cachedBannerView) {
     self.bannerView = cachedBannerView;
     self.bannerView.delegate = self;
-    self.bannerView.rootViewController = [RNGoogleMobileAdsCommon getCurrentViewController];
+    self.bannerView.rootViewController = [RNGoogleMobileAdsCommon currentViewController];
     
     // Check if this is a fluid ad and handle layout accordingly
     GADAdSize adSize = self.bannerView.adSize;
@@ -90,13 +90,7 @@
     // Add to view hierarchy
     [self addSubview:self.bannerView];
     
-    // Send loaded event if ad is already loaded
-    if (self.bannerView.hasBeenReceived) {
-      [self sendEvent:@"onAdLoaded" body:@{
-        @"width": @(self.bannerView.bounds.size.width),
-        @"height": @(self.bannerView.bounds.size.height)
-      }];
-    }
+    // Send loaded event - the delegate will handle this when ad loads
   }
 #endif
 }

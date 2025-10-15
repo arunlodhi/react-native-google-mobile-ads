@@ -97,8 +97,8 @@
   _propsChanged = true;
 }
 
-- (void)setManualImpressionsEnabled:(BOOL *)manualImpressionsEnabled {
-  _manualImpressionsEnabled = [NSNumber numberWithBool:manualImpressionsEnabled];
+- (void)setManualImpressionsEnabled:(NSNumber *)manualImpressionsEnabled {
+  _manualImpressionsEnabled = manualImpressionsEnabled;
   _propsChanged = true;
 }
 
@@ -127,9 +127,9 @@
   [self addSubview:_banner];
   _banner.adUnitID = _unitId;
   [self setRequested:YES];
-  __weak typeof(self) weakSelf = self;
+  __weak RNGoogleMobileAdsBannerComponent *weakSelf = self;
   _banner.paidEventHandler = ^(GADAdValue *_Nonnull value) {
-    typeof(self) strongSelf = weakSelf;
+    RNGoogleMobileAdsBannerComponent *strongSelf = weakSelf;
     if (strongSelf) {
       [strongSelf sendEvent:@"onPaid"
                     payload:@{

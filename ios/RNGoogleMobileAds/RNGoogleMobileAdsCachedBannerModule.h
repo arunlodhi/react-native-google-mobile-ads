@@ -18,6 +18,10 @@
 
 #import <Foundation/Foundation.h>
 
+#if !TARGET_OS_MACCATALYST
+#import <GoogleMobileAds/GoogleMobileAds.h>
+#endif
+
 #ifdef RCT_NEW_ARCH_ENABLED
 
 #import <RNGoogleMobileAdsSpec/RNGoogleMobileAdsSpec.h>
@@ -29,5 +33,7 @@
 @interface RNGoogleMobileAdsCachedBannerModule : NSObject <RCTBridgeModule>
 
 #endif
+
+- (GADBannerView *)getCachedBannerView:(NSString *)requestId;
 
 @end
