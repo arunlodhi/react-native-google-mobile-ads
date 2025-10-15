@@ -27,6 +27,9 @@
 #import <RNGoogleMobileAdsSpec/RNGoogleMobileAdsSpec.h>
 #endif
 
+// Forward declaration
+@class RNGoogleMobileAdsCachedBannerDelegate;
+
 @interface RNGoogleMobileAdsCachedBannerModule ()
 @property(nonatomic, strong) NSMutableDictionary<NSString *, GADBannerView *> *cachedBannerAds;
 @property(nonatomic, strong) NSMutableDictionary<NSString *, NSDictionary *> *cachedAdInfo;
