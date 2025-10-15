@@ -22,26 +22,16 @@
 #import "RNGoogleMobileAdsCachedBannerComponent.h"
 
 #ifdef RCT_NEW_ARCH_ENABLED
-#import <react/renderer/components/RNGoogleMobileAdsSpec/ComponentDescriptors.h>
-#import <react/renderer/components/RNGoogleMobileAdsSpec/EventEmitters.h>
-#import <react/renderer/components/RNGoogleMobileAdsSpec/Props.h>
-#import <react/renderer/components/RNGoogleMobileAdsSpec/RCTComponentViewHelpers.h>
-
-#import "RCTFabricComponentsPlugins.h"
-
-using namespace facebook::react;
-
-@interface RNGoogleMobileAdsCachedBannerView : RCTViewComponentView <RCTRNGoogleMobileAdsCachedBannerViewViewProtocol>
+// For Fabric (New Architecture), we create a simple wrapper that ensures the class exists
+@interface RNGoogleMobileAdsCachedBannerView : UIView
 @property(nonatomic, strong) RNGoogleMobileAdsCachedBannerComponent *cachedBannerComponent;
+@property(nonatomic, copy) NSString *requestId;
 @end
 
 @implementation RNGoogleMobileAdsCachedBannerView
 
 - (instancetype)initWithFrame:(CGRect)frame {
   if (self = [super initWithFrame:frame]) {
-    static const auto defaultProps = std::make_shared<const RNGoogleMobileAdsCachedBannerViewProps>();
-    _props = defaultProps;
-    
     _cachedBannerComponent = [RNGoogleMobileAdsCachedBannerComponent new];
     [self addSubview:_cachedBannerComponent];
   }
@@ -53,37 +43,16 @@ using namespace facebook::react;
   _cachedBannerComponent.frame = self.bounds;
 }
 
-+ (ComponentDescriptorProvider)componentDescriptorProvider {
-  return concreteComponentDescriptorProvider<RNGoogleMobileAdsCachedBannerViewComponentDescriptor>();
+- (void)setRequestId:(NSString *)requestId {
+  _requestId = requestId;
+  _cachedBannerComponent.requestId = requestId;
 }
 
-+ (BOOL)shouldBeRecycled {
-  return NO;
-}
-
-- (void)updateProps:(Props::Shared const &)props oldProps:(Props::Shared const &)oldProps {
-  const auto &oldViewProps = *std::static_pointer_cast<RNGoogleMobileAdsCachedBannerViewProps const>(_props);
-  const auto &newViewProps = *std::static_pointer_cast<RNGoogleMobileAdsCachedBannerViewProps const>(props);
-
-  if (oldViewProps.requestId != newViewProps.requestId) {
-    NSString *requestId = [[NSString alloc] initWithUTF8String:newViewProps.requestId.c_str()];
-    _cachedBannerComponent.requestId = requestId;
-  }
-
-  [super updateProps:props oldProps:oldProps];
-}
-
-- (void)handleCommand:(const NSString *)commandName args:(const NSArray *)args {
-  if ([commandName isEqualToString:@"recordManualImpression"]) {
-    [_cachedBannerComponent recordManualImpression];
-  }
+- (void)recordManualImpression {
+  [_cachedBannerComponent recordManualImpression];
 }
 
 @end
-
-Class<RCTComponentViewProtocol> RNGoogleMobileAdsCachedBannerViewCls(void) {
-  return RNGoogleMobileAdsCachedBannerView.class;
-}
 
 #endif
 
