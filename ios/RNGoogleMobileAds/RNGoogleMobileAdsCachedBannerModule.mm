@@ -27,8 +27,18 @@
 #import <RNGoogleMobileAdsSpec/RNGoogleMobileAdsSpec.h>
 #endif
 
-// Forward declaration
-@class RNGoogleMobileAdsCachedBannerDelegate;
+// Delegate class interface declaration
+@interface RNGoogleMobileAdsCachedBannerDelegate : NSObject <GADBannerViewDelegate>
+@property(nonatomic, strong) NSString *requestId;
+@property(nonatomic, copy) RCTPromiseResolveBlock resolver;
+@property(nonatomic, copy) RCTPromiseRejectBlock rejecter;
+@property(nonatomic, weak) RNGoogleMobileAdsCachedBannerModule *module;
+
+- (instancetype)initWithRequestId:(NSString *)requestId
+                         resolver:(RCTPromiseResolveBlock)resolver
+                         rejecter:(RCTPromiseRejectBlock)rejecter
+                           module:(RNGoogleMobileAdsCachedBannerModule *)module;
+@end
 
 @interface RNGoogleMobileAdsCachedBannerModule ()
 @property(nonatomic, strong) NSMutableDictionary<NSString *, GADBannerView *> *cachedBannerAds;
@@ -134,7 +144,7 @@ RCT_EXPORT_METHOD(requestCachedBannerAd:(NSDictionary *)config
   GADRequest *request = [RNGoogleMobileAdsCommon buildAdRequest:config[@"requestOptions"]];
   
   // Set delegate to handle load completion
-  __weak typeof(self) weakSelf = self;
+  __weak RNGoogleMobileAdsCachedBannerModule *weakSelf = self;
   bannerView.delegate = [[RNGoogleMobileAdsCachedBannerDelegate alloc] initWithRequestId:requestId
                                                                                 resolver:resolve
                                                                                 rejecter:reject
@@ -215,14 +225,6 @@ RCT_EXPORT_METHOD(clearAllCachedAds:(RCTPromiseResolveBlock)resolve
   return [[NSUUID UUID] UUIDString];
 }
 
-@end
-
-// Delegate class for handling ad load events
-@interface RNGoogleMobileAdsCachedBannerDelegate : NSObject <GADBannerViewDelegate>
-@property(nonatomic, strong) NSString *requestId;
-@property(nonatomic, copy) RCTPromiseResolveBlock resolver;
-@property(nonatomic, copy) RCTPromiseRejectBlock rejecter;
-@property(nonatomic, weak) RNGoogleMobileAdsCachedBannerModule *module;
 @end
 
 @implementation RNGoogleMobileAdsCachedBannerDelegate
