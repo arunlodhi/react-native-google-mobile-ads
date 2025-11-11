@@ -91,6 +91,9 @@ using namespace facebook::react;
     _banner.delegate = self;
     _banner.rootViewController = [RNGoogleMobileAdsCommon currentViewController];
     
+    // Add to view hierarchy first
+    [self addSubview:_banner];
+    
     // Check if this is a fluid ad and handle layout accordingly
     GADAdSize adSize = _banner.adSize;
     BOOL isFluid = GADAdSizeEqualToSize(adSize, GADAdSizeFluid);
@@ -101,7 +104,7 @@ using namespace facebook::react;
       _banner.autoresizingMask = UIViewAutoresizingFlexibleWidth;
       _banner.translatesAutoresizingMaskIntoConstraints = YES;
     } else {
-      // For fixed-size ads, use constraints
+      // For fixed-size ads, use constraints (after adding to view hierarchy)
       _banner.translatesAutoresizingMaskIntoConstraints = NO;
       [NSLayoutConstraint activateConstraints:@[
         [_banner.centerXAnchor constraintEqualToAnchor:self.centerXAnchor],
@@ -110,9 +113,6 @@ using namespace facebook::react;
         [_banner.heightAnchor constraintLessThanOrEqualToAnchor:self.heightAnchor]
       ]];
     }
-    
-    // Add to view hierarchy
-    [self addSubview:_banner];
   }
 }
 
