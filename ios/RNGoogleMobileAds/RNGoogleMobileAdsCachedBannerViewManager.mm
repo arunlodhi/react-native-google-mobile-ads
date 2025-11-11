@@ -90,6 +90,7 @@ RCT_EXPORT_METHOD(recordManualImpression : (nonnull NSNumber *)reactTag) {
   return nil;
 #else
   RNGoogleMobileAdsCachedBannerComponent *banner = [RNGoogleMobileAdsCachedBannerComponent new];
+  banner.bridge = self.bridge;
   return banner;
 #endif
 }

@@ -24,9 +24,10 @@
 #import <GoogleMobileAds/GoogleMobileAds.h>
 #endif
 
+#import <React/RCTBridge.h>
+
 @interface RNGoogleMobileAdsCachedBannerComponent () <GADBannerViewDelegate>
 @property(nonatomic, strong) GADBannerView *bannerView;
-@property(nonatomic, strong) RNGoogleMobileAdsCachedBannerModule *cachedBannerModule;
 @end
 
 @implementation RNGoogleMobileAdsCachedBannerComponent
@@ -34,10 +35,17 @@
 - (instancetype)initWithFrame:(CGRect)frame {
   self = [super initWithFrame:frame];
   if (self) {
-    // Get reference to the cached banner module
-    _cachedBannerModule = [RNGoogleMobileAdsCachedBannerModule new];
+    // Module will be accessed via bridge when needed
   }
   return self;
+}
+
+- (RNGoogleMobileAdsCachedBannerModule *)cachedBannerModule {
+  // Get the module from the bridge
+  if (self.bridge) {
+    return [self.bridge moduleForClass:[RNGoogleMobileAdsCachedBannerModule class]];
+  }
+  return nil;
 }
 
 - (void)setRequestId:(NSString *)requestId {
