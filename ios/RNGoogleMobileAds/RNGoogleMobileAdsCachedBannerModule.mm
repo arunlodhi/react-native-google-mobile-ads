@@ -44,6 +44,7 @@
 @interface RNGoogleMobileAdsCachedBannerModule ()
 @property(nonatomic, strong) NSMutableDictionary<NSString *, GADBannerView *> *cachedBannerAds;
 @property(nonatomic, strong) NSMutableDictionary<NSString *, NSDictionary *> *cachedAdInfo;
+@property(nonatomic, strong) NSMutableDictionary<NSString *, RNGoogleMobileAdsCachedBannerDelegate *> *delegates;
 @end
 
 @implementation RNGoogleMobileAdsCachedBannerModule
@@ -63,6 +64,7 @@ RCT_EXPORT_MODULE(RNGoogleMobileAdsCachedBannerModule);
   if (self) {
     _cachedBannerAds = [[NSMutableDictionary alloc] init];
     _cachedAdInfo = [[NSMutableDictionary alloc] init];
+    _delegates = [[NSMutableDictionary alloc] init];
   }
   return self;
 }
@@ -160,21 +162,43 @@ RCT_EXPORT_METHOD(requestCachedBannerAd:(NSDictionary *)config
     }
   }
   
-  // Create ad request
-  GADRequest *request = [RNGoogleMobileAdsCommon buildAdRequest:config[@"requestOptions"]];
+  // Create ad request - use GAMRequest for GAM ads, GADRequest for regular ads
+  id request;
+  if (isGAM) {
+    // For GAM ads, we need to use GAMRequest
+    Class gamRequestClass = NSClassFromString(@"GAMRequest");
+    if (gamRequestClass) {
+      request = [RNGoogleMobileAdsCommon buildAdRequest:config[@"requestOptions"]];
+      NSLog(@"CachedBannerModule: Created GAMRequest for GAM ad");
+    } else {
+      reject(@"gam_unavailable", @"GAMRequest class not available. Make sure Google Mobile Ads SDK is properly installed.", nil);
+      return;
+    }
+  } else {
+    request = [RNGoogleMobileAdsCommon buildAdRequest:config[@"requestOptions"]];
+    NSLog(@"CachedBannerModule: Created GADRequest for regular ad");
+  }
   
   // Set delegate to handle load completion
   __weak RNGoogleMobileAdsCachedBannerModule *weakSelf = self;
-  bannerView.delegate = [[RNGoogleMobileAdsCachedBannerDelegate alloc] initWithRequestId:requestId
-                                                                                resolver:resolve
-                                                                                rejecter:reject
-                                                                                  module:weakSelf];
+  RNGoogleMobileAdsCachedBannerDelegate *delegate = [[RNGoogleMobileAdsCachedBannerDelegate alloc] initWithRequestId:requestId
+                                                                                                              resolver:resolve
+                                                                                                              rejecter:reject
+                                                                                                                module:weakSelf];
+  bannerView.delegate = delegate;
+  
+  // Store the delegate to keep it alive until the ad loads or fails
+  self.delegates[requestId] = delegate;
+  
+  NSLog(@"CachedBannerModule: Set delegate for requestId: %@", requestId);
+  NSLog(@"CachedBannerModule: About to load ad with unitId: %@", unitId);
   
   // Store the banner view
   self.cachedBannerAds[requestId] = bannerView;
   
   // Load the ad
   [bannerView loadRequest:request];
+  NSLog(@"CachedBannerModule: Called loadRequest for requestId: %@", requestId);
 #endif
 }
 
@@ -197,6 +221,7 @@ RCT_EXPORT_METHOD(removeCachedAd:(NSString *)requestId
     bannerView.delegate = nil;
     [self.cachedBannerAds removeObjectForKey:requestId];
     [self.cachedAdInfo removeObjectForKey:requestId];
+    [self.delegates removeObjectForKey:requestId];
   }
   resolve(nil);
 }
@@ -214,6 +239,7 @@ RCT_EXPORT_METHOD(clearAllCachedAds:(RCTPromiseResolveBlock)resolve
   }
   [self.cachedBannerAds removeAllObjects];
   [self.cachedAdInfo removeAllObjects];
+  [self.delegates removeAllObjects];
   resolve(nil);
 }
 
@@ -366,6 +392,11 @@ RCT_EXPORT_METHOD(clearAllCachedAds:(RCTPromiseResolveBlock)resolve
     self.resolver = nil;
     self.rejecter = nil;
   }
+  
+  // Clean up the delegate from the module's dictionary after resolving
+  if (self.module) {
+    [self.module.delegates removeObjectForKey:self.requestId];
+  }
 }
 
 - (void)bannerView:(GADBannerView *)bannerView didFailToReceiveAdWithError:(NSError *)error {
@@ -385,6 +416,11 @@ RCT_EXPORT_METHOD(clearAllCachedAds:(RCTPromiseResolveBlock)resolve
     self.rejecter(@"ad_load_failed", error.localizedDescription, error);
     self.resolver = nil;
     self.rejecter = nil;
+  }
+  
+  // Clean up the delegate from the module's dictionary after rejecting
+  if (self.module) {
+    [self.module.delegates removeObjectForKey:self.requestId];
   }
 }
 
