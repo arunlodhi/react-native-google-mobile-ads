@@ -20,12 +20,16 @@
 #import <UIKit/UIKit.h>
 
 @class RCTBridge;
+@class RNGoogleMobileAdsCachedBannerModule;
 
 @interface RNGoogleMobileAdsCachedBannerComponent : UIView
 
 @property(nonatomic, copy) RCTBubblingEventBlock onNativeEvent;
 @property(nonatomic, copy) NSString *requestId;
 @property(nonatomic, weak) RCTBridge *bridge;
+
++ (void)setSharedModuleInstance:(RNGoogleMobileAdsCachedBannerModule *)module;
++ (RNGoogleMobileAdsCachedBannerModule *)sharedModuleInstance;
 
 - (void)recordManualImpression;
 
