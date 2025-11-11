@@ -48,6 +48,11 @@ export declare enum AdEventType {
     /**
      * The ad size has changed. This event provides the new width and height.
      */
-    SIZE_CHANGE = "size_change"
+    SIZE_CHANGE = "size_change",
+    /**
+     * Called when an impression is recorded for an ad.
+     * This event is fired when the ad is shown to the user and an impression is logged.
+     */
+    IMPRESSION = "impression"
 }
 //# sourceMappingURL=AdEventType.d.ts.map
