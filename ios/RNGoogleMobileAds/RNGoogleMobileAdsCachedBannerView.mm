@@ -5,6 +5,7 @@
 #import "RNGoogleMobileAdsCachedBannerView.h"
 #import "RNGoogleMobileAdsCommon.h"
 #import "RNGoogleMobileAdsCachedBannerModule.h"
+#import "RNGoogleMobileAdsCachedBannerComponent.h"
 
 #import <react/renderer/components/RNGoogleMobileAdsSpec/ComponentDescriptors.h>
 #import <react/renderer/components/RNGoogleMobileAdsSpec/EventEmitters.h>
@@ -80,12 +81,8 @@ using namespace facebook::react;
     _banner = nil;
   }
   
-  // Get cached banner view from module
-  RNGoogleMobileAdsCachedBannerModule *module = [[RCTBridge currentBridge] moduleForClass:[RNGoogleMobileAdsCachedBannerModule class]];
-  if (!module) {
-    // Try to get from shared instance
-    module = [RNGoogleMobileAdsCachedBannerComponent sharedModuleInstance];
-  }
+  // Get cached banner view from module - use shared instance for Fabric
+  RNGoogleMobileAdsCachedBannerModule *module = [RNGoogleMobileAdsCachedBannerComponent sharedModuleInstance];
   
   GADBannerView *cachedBannerView = [module getCachedBannerView:_requestId];
   
