@@ -52,7 +52,7 @@
 }
 
 - (void)adDidRecordImpression:(id<GADFullScreenPresentingAd>)ad {
-  // Not implemented yet
+  [self sendAdEventWithType:GOOGLE_MOBILE_ADS_EVENT_IMPRESSION error:nil data:nil];
 }
 
 - (void)interstitialAd:(GADInterstitialAd *)interstitialAd

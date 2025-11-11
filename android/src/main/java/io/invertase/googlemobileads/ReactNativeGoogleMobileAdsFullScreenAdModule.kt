@@ -224,7 +224,7 @@ abstract class ReactNativeGoogleMobileAdsFullScreenAdModule<T>(
             }
 
             override fun onAdImpression() {
-              // Not Implemented Yet
+              sendAdEvent(ReactNativeGoogleMobileAdsEvent.GOOGLE_MOBILE_ADS_EVENT_IMPRESSION)
             }
 
             private fun sendAdEvent(type: String) {
