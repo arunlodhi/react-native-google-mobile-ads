@@ -21,47 +21,6 @@
 
 #import "RNGoogleMobileAdsCachedBannerComponent.h"
 
-#ifdef RCT_NEW_ARCH_ENABLED
-// For Fabric (New Architecture), we create a simple wrapper that ensures the class exists
-@interface RNGoogleMobileAdsCachedBannerView : UIView
-@property(nonatomic, strong) RNGoogleMobileAdsCachedBannerComponent *cachedBannerComponent;
-@property(nonatomic, copy) NSString *requestId;
-@property(nonatomic, weak) RCTBridge *bridge;
-@end
-
-@implementation RNGoogleMobileAdsCachedBannerView
-
-- (instancetype)initWithFrame:(CGRect)frame {
-  if (self = [super initWithFrame:frame]) {
-    _cachedBannerComponent = [RNGoogleMobileAdsCachedBannerComponent new];
-    [self addSubview:_cachedBannerComponent];
-  }
-  return self;
-}
-
-- (void)layoutSubviews {
-  [super layoutSubviews];
-  _cachedBannerComponent.frame = self.bounds;
-}
-
-- (void)setBridge:(RCTBridge *)bridge {
-  _bridge = bridge;
-  _cachedBannerComponent.bridge = bridge;
-}
-
-- (void)setRequestId:(NSString *)requestId {
-  _requestId = requestId;
-  _cachedBannerComponent.requestId = requestId;
-}
-
-- (void)recordManualImpression {
-  [_cachedBannerComponent recordManualImpression];
-}
-
-@end
-
-#endif
-
 #ifndef RCT_NEW_ARCH_ENABLED
 
 @interface RNGoogleMobileAdsCachedBannerViewManager : RCTViewManager
