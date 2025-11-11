@@ -26,6 +26,7 @@
 @interface RNGoogleMobileAdsCachedBannerView : UIView
 @property(nonatomic, strong) RNGoogleMobileAdsCachedBannerComponent *cachedBannerComponent;
 @property(nonatomic, copy) NSString *requestId;
+@property(nonatomic, weak) RCTBridge *bridge;
 @end
 
 @implementation RNGoogleMobileAdsCachedBannerView
@@ -41,6 +42,11 @@
 - (void)layoutSubviews {
   [super layoutSubviews];
   _cachedBannerComponent.frame = self.bounds;
+}
+
+- (void)setBridge:(RCTBridge *)bridge {
+  _bridge = bridge;
+  _cachedBannerComponent.bridge = bridge;
 }
 
 - (void)setRequestId:(NSString *)requestId {
