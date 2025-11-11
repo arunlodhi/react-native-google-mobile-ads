@@ -21,6 +21,7 @@
 
 #if !TARGET_OS_MACCATALYST
 #import <GoogleMobileAds/GoogleMobileAds.h>
+#import <GoogleMobileAds/GAMBannerView.h>
 #endif
 
 #ifdef RCT_NEW_ARCH_ENABLED
@@ -95,12 +96,22 @@ RCT_EXPORT_METHOD(requestCachedBannerAd:(NSDictionary *)config
   GADBannerView *bannerView;
   
   if (isGAM) {
-    bannerView = [[GAMBannerView alloc] init];
+    // Check if GAMBannerView class is available
+    Class gamBannerViewClass = NSClassFromString(@"GAMBannerView");
+    if (gamBannerViewClass) {
+      bannerView = [[gamBannerViewClass alloc] init];
+    } else {
+      reject(@"gam_unavailable", @"GAMBannerView class not available. Make sure Google Mobile Ads SDK is properly installed.", nil);
+      return;
+    }
   } else {
     bannerView = [[GADBannerView alloc] init];
   }
   
   bannerView.adUnitID = unitId;
+  
+  // Set root view controller
+  bannerView.rootViewController = [UIApplication sharedApplication].delegate.window.rootViewController;
   
   // Initialize bannerView with initial dimensions if provided
   CGFloat maxHeight = config[@"maxHeight"] ? [config[@"maxHeight"] floatValue] : 0.0f;
@@ -130,7 +141,16 @@ RCT_EXPORT_METHOD(requestCachedBannerAd:(NSDictionary *)config
         GADAdSize adSize = [RNGoogleMobileAdsCommon stringToAdSize:sizeString withMaxHeight:-1 andWidth:0];
         [adSizes addObject:NSValueFromGADAdSize(adSize)];
       }
-      ((GAMBannerView *)bannerView).validAdSizes = adSizes;
+      // Use performSelector to set validAdSizes on GAMBannerView
+      if ([bannerView respondsToSelector:@selector(setValidAdSizes:)]) {
+        [bannerView performSelector:@selector(setValidAdSizes:) withObject:adSizes];
+      }
+    }
+    
+    // Set manual impressions enabled for GAM ads if specified
+    BOOL manualImpressionsEnabled = config[@"manualImpressionsEnabled"] ? [config[@"manualImpressionsEnabled"] boolValue] : NO;
+    if (manualImpressionsEnabled && [bannerView respondsToSelector:@selector(setEnableManualImpressions:)]) {
+      [bannerView performSelector:@selector(setEnableManualImpressions:) withObject:@(YES)];
     }
   } else {
     NSString *sizeString = config[@"size"];
@@ -201,6 +221,25 @@ RCT_EXPORT_METHOD(clearAllCachedAds:(RCTPromiseResolveBlock)resolve
   return self.cachedBannerAds[requestId];
 }
 
+- (GADBannerView *)createNewViewForCachedAd:(NSString *)requestId {
+  NSDictionary *adInfoData = self.cachedAdInfo[requestId];
+  if (adInfoData == nil || ![adInfoData[@"isLoaded"] boolValue]) {
+    NSLog(@"CachedBannerModule: No cached ad info or ad not loaded for requestId: %@", requestId);
+    return nil;
+  }
+  
+  // For now, return the original ad view
+  // Creating new views with the same ad content is complex and may not be supported by the SDK
+  GADBannerView *originalAdView = self.cachedBannerAds[requestId];
+  if (originalAdView == nil) {
+    NSLog(@"CachedBannerModule: Original ad view not found for requestId: %@", requestId);
+    return nil;
+  }
+  
+  NSLog(@"CachedBannerModule: Returning original cached ad view for requestId: %@", requestId);
+  return originalAdView;
+}
+
 - (void)storeCachedAdInfo:(NSString *)requestId
                    unitId:(NSString *)unitId
                    isGAM:(BOOL)isGAM
@@ -248,7 +287,9 @@ RCT_EXPORT_METHOD(clearAllCachedAds:(RCTPromiseResolveBlock)resolve
   NSLog(@"CachedBannerModule: RequestId: %@", self.requestId);
   NSLog(@"CachedBannerModule: UnitId: %@", bannerView.adUnitID);
   
-  BOOL isGAM = [bannerView isKindOfClass:[GAMBannerView class]];
+  // Check if this is a GAM banner view using class name
+  Class gamBannerViewClass = NSClassFromString(@"GAMBannerView");
+  BOOL isGAM = gamBannerViewClass && [bannerView isKindOfClass:gamBannerViewClass];
   NSLog(@"CachedBannerModule: IsGAM: %@", isGAM ? @"YES" : @"NO");
   
   // Log banner view details
@@ -328,8 +369,9 @@ RCT_EXPORT_METHOD(clearAllCachedAds:(RCTPromiseResolveBlock)resolve
 }
 
 - (void)bannerView:(GADBannerView *)bannerView didFailToReceiveAdWithError:(NSError *)error {
-  // Determine if this is a GAM banner view
-  BOOL isGAM = [bannerView isKindOfClass:[GAMBannerView class]];
+  // Determine if this is a GAM banner view using class name
+  Class gamBannerViewClass = NSClassFromString(@"GAMBannerView");
+  BOOL isGAM = gamBannerViewClass && [bannerView isKindOfClass:gamBannerViewClass];
   
   [self.module storeCachedAdInfo:self.requestId
                           unitId:bannerView.adUnitID
