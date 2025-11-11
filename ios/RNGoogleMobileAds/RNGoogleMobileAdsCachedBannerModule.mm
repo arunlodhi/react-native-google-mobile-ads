@@ -17,6 +17,7 @@
  */
 
 #import "RNGoogleMobileAdsCachedBannerModule.h"
+#import "RNGoogleMobileAdsCachedBannerComponent.h"
 #import "RNGoogleMobileAdsCommon.h"
 
 #if !TARGET_OS_MACCATALYST
@@ -65,6 +66,9 @@ RCT_EXPORT_MODULE(RNGoogleMobileAdsCachedBannerModule);
     _cachedBannerAds = [[NSMutableDictionary alloc] init];
     _cachedAdInfo = [[NSMutableDictionary alloc] init];
     _delegates = [[NSMutableDictionary alloc] init];
+    
+    // Set this instance as the shared module instance for components to access
+    [RNGoogleMobileAdsCachedBannerComponent setSharedModuleInstance:self];
   }
   return self;
 }

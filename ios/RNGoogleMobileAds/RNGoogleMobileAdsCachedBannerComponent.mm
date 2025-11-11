@@ -26,25 +26,47 @@
 
 #import <React/RCTBridge.h>
 
+// Static reference to the module instance
+static RNGoogleMobileAdsCachedBannerModule *_sharedModuleInstance = nil;
+
 @interface RNGoogleMobileAdsCachedBannerComponent () <GADBannerViewDelegate>
 @property(nonatomic, strong) GADBannerView *bannerView;
 @end
 
 @implementation RNGoogleMobileAdsCachedBannerComponent
 
++ (void)setSharedModuleInstance:(RNGoogleMobileAdsCachedBannerModule *)module {
+  _sharedModuleInstance = module;
+}
+
++ (RNGoogleMobileAdsCachedBannerModule *)sharedModuleInstance {
+  return _sharedModuleInstance;
+}
+
 - (instancetype)initWithFrame:(CGRect)frame {
   self = [super initWithFrame:frame];
   if (self) {
-    // Module will be accessed via bridge when needed
+    // Module will be accessed via static reference or bridge
   }
   return self;
 }
 
 - (RNGoogleMobileAdsCachedBannerModule *)cachedBannerModule {
-  // Get the module from the bridge
-  if (self.bridge) {
-    return [self.bridge moduleForClass:[RNGoogleMobileAdsCachedBannerModule class]];
+  // Try to get from static reference first (works in both architectures)
+  if (_sharedModuleInstance) {
+    return _sharedModuleInstance;
   }
+  
+  // Fallback to bridge for Old Architecture
+  if (self.bridge) {
+    RNGoogleMobileAdsCachedBannerModule *module = [self.bridge moduleForClass:[RNGoogleMobileAdsCachedBannerModule class]];
+    // Cache it for future use
+    if (module) {
+      _sharedModuleInstance = module;
+    }
+    return module;
+  }
+  
   return nil;
 }
 
