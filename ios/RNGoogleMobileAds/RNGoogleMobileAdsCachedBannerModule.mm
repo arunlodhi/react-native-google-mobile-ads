@@ -76,8 +76,8 @@ RCT_EXPORT_MODULE(RNGoogleMobileAdsCachedBannerModule);
 }
 
 RCT_EXPORT_METHOD(requestCachedBannerAd:(NSDictionary *)config
-                  resolver:(RCTPromiseResolveBlock)resolve
-                  rejecter:(RCTPromiseRejectBlock)reject) {
+                  resolve:(RCTPromiseResolveBlock)resolve
+                  reject:(RCTPromiseRejectBlock)reject) {
 #if TARGET_OS_MACCATALYST
   reject(@"unsupported", @"Cached banner ads are not supported on macOS.", nil);
   return;
@@ -179,8 +179,8 @@ RCT_EXPORT_METHOD(requestCachedBannerAd:(NSDictionary *)config
 }
 
 RCT_EXPORT_METHOD(getCachedAdInfo:(NSString *)requestId
-                  resolver:(RCTPromiseResolveBlock)resolve
-                  rejecter:(RCTPromiseRejectBlock)reject) {
+                  resolve:(RCTPromiseResolveBlock)resolve
+                  reject:(RCTPromiseRejectBlock)reject) {
   NSDictionary *adInfo = self.cachedAdInfo[requestId];
   if (adInfo) {
     resolve(adInfo);
@@ -190,8 +190,8 @@ RCT_EXPORT_METHOD(getCachedAdInfo:(NSString *)requestId
 }
 
 RCT_EXPORT_METHOD(removeCachedAd:(NSString *)requestId
-                  resolver:(RCTPromiseResolveBlock)resolve
-                  rejecter:(RCTPromiseRejectBlock)reject) {
+                  resolve:(RCTPromiseResolveBlock)resolve
+                  reject:(RCTPromiseRejectBlock)reject) {
   GADBannerView *bannerView = self.cachedBannerAds[requestId];
   if (bannerView) {
     bannerView.delegate = nil;
@@ -202,13 +202,13 @@ RCT_EXPORT_METHOD(removeCachedAd:(NSString *)requestId
 }
 
 RCT_EXPORT_METHOD(getAllCachedAdIds:(RCTPromiseResolveBlock)resolve
-                  rejecter:(RCTPromiseRejectBlock)reject) {
+                  reject:(RCTPromiseRejectBlock)reject) {
   NSArray *requestIds = [self.cachedBannerAds allKeys];
   resolve(requestIds);
 }
 
 RCT_EXPORT_METHOD(clearAllCachedAds:(RCTPromiseResolveBlock)resolve
-                  rejecter:(RCTPromiseRejectBlock)reject) {
+                  reject:(RCTPromiseRejectBlock)reject) {
   for (GADBannerView *bannerView in [self.cachedBannerAds allValues]) {
     bannerView.delegate = nil;
   }
